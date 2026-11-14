@@ -1,7 +1,8 @@
-import { db, json, conTokens, CompraDB } from "@/lib/db";
+import { explicar, db, json, conTokens, CompraDB } from "@/lib/db";
 
 // Busca compras por cédula o celular (para reimprimir, reenviar o anular)
 export async function GET(req: Request) {
+  try {
   const q = (new URL(req.url).searchParams.get("q") ?? "").replace(/\D/g, "");
   if (q.length < 5) return json({ error: "Escribe la cédula o el celular" }, 400);
   const { data, error } = await db()
@@ -10,6 +11,9 @@ export async function GET(req: Request) {
     .or(`cedula.eq.${q},celular.eq.${q}`)
     .order("created_at", { ascending: false })
     .limit(20);
-  if (error) return json({ error: error.message }, 500);
+  if (error) return json({ error: explicar(error) }, 500);
   return json({ compras: await Promise.all((data as CompraDB[]).map(conTokens)) });
+  } catch (e) {
+    return json({ error: explicar(e) }, 500);
+  }
 }

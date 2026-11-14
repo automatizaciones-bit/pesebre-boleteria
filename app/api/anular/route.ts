@@ -1,7 +1,8 @@
-import { db, json, usuarioActual } from "@/lib/db";
+import { explicar, db, json, usuarioActual } from "@/lib/db";
 
 // Anula una compra completa: sus boletas que no se han usado dejan de servir.
 export async function POST(req: Request) {
+  try {
   const usuario = await usuarioActual();
   const { id } = await req.json().catch(() => ({}));
   const compraId = Number(id);
@@ -18,4 +19,7 @@ export async function POST(req: Request) {
 
   await db().from("escaneos").insert({ codigo: `compra:${compraId}`, resultado: "compra_anulada", puerta: usuario });
   return json({ ok: true });
+  } catch (e) {
+    return json({ error: explicar(e) }, 500);
+  }
 }

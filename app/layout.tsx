@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import Barra from "@/components/Barra";
+import EstadoSistema from "@/components/EstadoSistema";
 import { usuarioActual } from "@/lib/db";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="es">
       <body>
         {usuario && <Barra usuario={usuario} />}
+        {usuario && <EstadoSistema />}
         {children}
       </body>
     </html>

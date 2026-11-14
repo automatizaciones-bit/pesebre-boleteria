@@ -174,7 +174,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 @media print {
   @page { size: 80mm auto; margin: 0; }
   html, body { background: #fff !important; color: #000 !important; }
-  .pantalla, .barra { display: none !important; }
+  .pantalla, .barra, .no-imprimir { display: none !important; }
   #zona-impresion { display: block; }
 }
 .termica {

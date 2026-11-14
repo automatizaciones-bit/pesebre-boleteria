@@ -1,4 +1,4 @@
-import { db, json, usuarioActual, conTokens, CompraDB } from "@/lib/db";
+import { db, json, usuarioActual, conTokens, CompraDB, explicar } from "@/lib/db";
 import { aleatorio } from "@/lib/firma";
 import { fechasVenta, precios, TipoBoleta } from "@/lib/config";
 
@@ -50,15 +50,19 @@ export async function POST(req: Request) {
   };
 
   // Un reintento por si (muy improbable) se repite un código aleatorio
+  try {
   for (let intento = 0; intento < 2; intento++) {
     const { data: id, error } = await db().rpc("crear_venta", { p: compra, p_boletas: lista });
     if (!error) {
       const { data } = await db().from("compras").select("*, boletas(*)").eq("id", id).single();
       return json({ compra: await conTokens(data as CompraDB) });
     }
-    if (error.code !== "23505") return json({ error: "Error guardando la venta: " + error.message }, 500);
+    if (error.code !== "23505") return json({ error: "Error guardando la venta: " + explicar(error) }, 500);
     lista.forEach((x) => (x.codigo = aleatorio(10)));
     compra.token = aleatorio(16);
+  }
+  } catch (e) {
+    return json({ error: "Error guardando la venta: " + explicar(e) }, 500);
   }
   return json({ error: "No se pudo guardar la venta, intenta de nuevo" }, 500);
 }
