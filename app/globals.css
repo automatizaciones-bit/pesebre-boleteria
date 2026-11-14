@@ -1,0 +1,195 @@
+:root {
+  --noche: #0a0f24;
+  --noche-2: #121a3a;
+  --noche-3: #1b2550;
+  --oro: #e8b33a;
+  --oro-claro: #ffd97a;
+  --oro-osc: #a8731a;
+  --texto: #f4efe2;
+  --suave: #a9b0cc;
+  --verde: #12a150;
+  --rojo: #d92d2d;
+  --naranja: #e98a15;
+  --radio: 14px;
+  --serif: "Georgia", "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  color: var(--texto);
+  background:
+    radial-gradient(ellipse at top, rgba(232,179,58,.12), transparent 55%),
+    radial-gradient(circle at 15% 30%, rgba(255,255,255,.05) 1px, transparent 1.5px) 0 0/90px 90px,
+    radial-gradient(circle at 70% 60%, rgba(255,255,255,.04) 1px, transparent 1.5px) 0 0/130px 130px,
+    var(--noche);
+  min-height: 100vh;
+}
+a { color: var(--oro-claro); }
+h1, h2, h3 { font-family: var(--serif); color: var(--oro-claro); margin: 0 0 .5em; font-weight: 700; }
+h1 { font-size: 1.7rem; } h2 { font-size: 1.25rem; } h3 { font-size: 1.05rem; }
+
+/* ---------- Barra superior ---------- */
+.barra {
+  display: flex; align-items: center; gap: 18px; padding: 10px 22px;
+  background: rgba(10,15,36,.85); border-bottom: 1px solid rgba(232,179,58,.25);
+  position: sticky; top: 0; z-index: 10; backdrop-filter: blur(6px);
+}
+.barra img { height: 42px; }
+.barra nav { display: flex; gap: 6px; flex: 1; }
+.barra nav a { color: var(--texto); text-decoration: none; padding: 8px 14px; border-radius: 10px; font-weight: 600; }
+.barra nav a:hover, .barra nav a.activo { background: var(--noche-3); color: var(--oro-claro); }
+.barra .usuario { color: var(--suave); font-size: .9rem; }
+
+.contenedor { max-width: 1200px; margin: 0 auto; padding: 22px; }
+
+/* ---------- Tarjetas y formularios ---------- */
+.tarjeta {
+  background: linear-gradient(180deg, var(--noche-2), rgba(18,26,58,.85));
+  border: 1px solid rgba(232,179,58,.22); border-radius: var(--radio);
+  padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.grid-2 { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+label { display: block; font-size: .85rem; color: var(--suave); margin: 12px 0 5px; font-weight: 600; }
+input, select {
+  width: 100%; padding: 12px 14px; font-size: 1.05rem; border-radius: 10px;
+  border: 1px solid #2c3870; background: #0d1430; color: var(--texto); outline: none;
+}
+input:focus, select:focus { border-color: var(--oro); box-shadow: 0 0 0 3px rgba(232,179,58,.2); }
+.fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 18px; border-radius: 11px; border: 0; cursor: pointer;
+  font-size: 1rem; font-weight: 700; text-decoration: none; color: #1a1205;
+  background: linear-gradient(180deg, var(--oro-claro), var(--oro)); transition: transform .05s, filter .15s;
+}
+.btn:hover { filter: brightness(1.07); } .btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.grande { width: 100%; padding: 16px; font-size: 1.15rem; }
+.btn.sec { background: var(--noche-3); color: var(--texto); border: 1px solid #34418a; }
+.btn.wa { background: #1fae54; color: #fff; }
+.btn.peligro { background: #5a1620; color: #ffd6d6; border: 1px solid #8a2633; }
+.btn.chico { padding: 7px 11px; font-size: .85rem; border-radius: 9px; }
+
+.error { background: rgba(217,45,45,.15); border: 1px solid rgba(217,45,45,.5); color: #ffc9c9; padding: 10px 14px; border-radius: 10px; margin-top: 12px; }
+.aviso { background: rgba(233,138,21,.15); border: 1px solid rgba(233,138,21,.5); color: #ffe0b8; padding: 10px 14px; border-radius: 10px; margin-top: 12px; }
+.suave { color: var(--suave); }
+
+/* ---------- Contadores de personas ---------- */
+.contadores { display: grid; gap: 10px; margin-top: 14px; }
+.contador {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px;
+  background: #0d1430; border: 1px solid #26306a; border-radius: 12px; padding: 10px 14px;
+}
+.contador .tipo b { display: block; font-size: 1.05rem; }
+.contador .tipo span { color: var(--suave); font-size: .85rem; }
+.contador .ctrl { display: flex; align-items: center; gap: 8px; }
+.contador .ctrl button {
+  width: 44px; height: 44px; border-radius: 10px; border: 1px solid #34418a;
+  background: var(--noche-3); color: var(--texto); font-size: 1.4rem; cursor: pointer;
+}
+.contador .ctrl input { width: 64px; text-align: center; font-size: 1.3rem; font-weight: 700; padding: 8px; }
+
+.metodos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.metodos button {
+  padding: 11px 6px; border-radius: 10px; border: 1px solid #34418a; background: #0d1430;
+  color: var(--texto); font-weight: 600; cursor: pointer;
+}
+.metodos button.activo { background: var(--oro); color: #1a1205; border-color: var(--oro); }
+
+.total { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 12px; }
+.total span { color: var(--suave); }
+.total b { font-family: var(--serif); font-size: 2.2rem; color: var(--oro-claro); }
+.cambio { font-size: 1.1rem; margin-top: 6px; }
+
+/* ---------- Boleta en pantalla ---------- */
+.boletas-lista { display: grid; gap: 14px; }
+.boleta {
+  background: linear-gradient(160deg, #141c42, #0c1230);
+  border: 1px solid rgba(232,179,58,.45); border-radius: 18px; padding: 18px;
+  position: relative; overflow: hidden; text-align: center;
+}
+.boleta::before, .boleta::after {
+  content: ""; position: absolute; top: 58%; width: 26px; height: 26px; border-radius: 50%; background: var(--noche);
+}
+.boleta::before { left: -13px; } .boleta::after { right: -13px; }
+.boleta .logo { width: 150px; }
+.boleta .tipo-b { display: inline-block; margin: 8px 0; padding: 5px 14px; border-radius: 99px; font-weight: 800; letter-spacing: .5px; background: var(--oro); color: #1a1205; }
+.boleta .fecha { font-family: var(--serif); font-size: 1.2rem; color: var(--oro-claro); }
+.boleta .qr { background: #fff; border-radius: 12px; padding: 10px; width: 230px; margin: 12px auto 6px; }
+.boleta .qr svg { display: block; width: 100%; height: auto; }
+.boleta .codigo { font-family: ui-monospace, monospace; letter-spacing: 1px; color: var(--suave); font-size: .9rem; }
+.boleta .titular { margin-top: 8px; font-size: .95rem; }
+.boleta .sello {
+  position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10,15,36,.72);
+  font-family: var(--serif); font-size: 2.2rem; color: #ff8b8b; font-weight: 800; transform: rotate(-12deg);
+}
+
+/* ---------- Portería ---------- */
+.porteria-entrada { font-size: 1.4rem; text-align: center; letter-spacing: 2px; }
+.resultado {
+  border-radius: 22px; padding: 34px 20px; text-align: center; margin-top: 18px; min-height: 300px;
+  display: flex; flex-direction: column; justify-content: center; gap: 8px; transition: background .15s;
+}
+.resultado .grande { font-family: var(--serif); font-size: clamp(2rem, 6vw, 3.6rem); font-weight: 800; line-height: 1.05; }
+.resultado .medio { font-size: clamp(1.3rem, 3.5vw, 2rem); font-weight: 700; }
+.resultado.ok { background: var(--verde); color: #fff; }
+.resultado.malo { background: var(--rojo); color: #fff; }
+.resultado.alerta { background: var(--naranja); color: #1b0f00; }
+.resultado.espera { background: var(--noche-2); border: 2px dashed #34418a; color: var(--suave); }
+#lector { max-width: 420px; margin: 14px auto 0; border-radius: 14px; overflow: hidden; }
+.historial { list-style: none; padding: 0; margin: 0; font-size: .9rem; }
+.historial li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #222c5c; }
+
+/* ---------- Panel ---------- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.kpi .valor { font-family: var(--serif); font-size: 2rem; color: var(--oro-claro); }
+.kpi .etiqueta { color: var(--suave); font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.barra-progreso { height: 10px; background: #0d1430; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.barra-progreso div { height: 100%; background: linear-gradient(90deg, var(--oro), var(--oro-claro)); }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #222c5c; }
+th { color: var(--suave); font-weight: 600; font-size: .8rem; text-transform: uppercase; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.compra-item { border: 1px solid #26306a; border-radius: 12px; padding: 12px; margin-top: 10px; }
+.compra-item.anulada { opacity: .55; }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* ---------- Login ---------- */
+.login { max-width: 420px; margin: 6vh auto; text-align: center; }
+.login img { width: 230px; margin-bottom: 8px; }
+
+/* ---------- Página pública ---------- */
+.publica { max-width: 460px; margin: 0 auto; padding: 22px 16px 60px; text-align: center; }
+.publica > img { width: 220px; }
+
+/* =====================================================================
+   IMPRESIÓN TÉRMICA 80 mm
+   ===================================================================== */
+#zona-impresion { display: none; }
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+  html, body { background: #fff !important; color: #000 !important; }
+  .pantalla, .barra { display: none !important; }
+  #zona-impresion { display: block; }
+}
+.termica {
+  width: 72mm; margin: 0 auto; padding: 3mm 0 6mm; color: #000; background: #fff;
+  font-family: "Courier New", ui-monospace, monospace; text-align: center;
+  page-break-after: always; break-after: page;
+}
+.termica:last-child { page-break-after: auto; break-after: auto; }
+.termica img.logo { width: 46mm; }
+.termica .t-evento { font-weight: 700; font-size: 11pt; margin-top: 1mm; }
+.termica .t-tipo { display: inline-block; border: 2px solid #000; padding: 1mm 4mm; margin: 2mm 0; font-weight: 700; font-size: 13pt; }
+.termica .t-fecha { font-weight: 700; font-size: 12pt; }
+.termica .t-qr { width: 50mm; margin: 2mm auto 1mm; }
+.termica .t-qr svg { display: block; width: 100%; height: auto; }
+.termica .t-cod { font-size: 9pt; letter-spacing: .5px; }
+.termica .t-linea { border-top: 1px dashed #000; margin: 2mm 0; }
+.termica .t-dato { display: flex; justify-content: space-between; font-size: 9pt; text-align: left; }
+.termica .t-legal { font-size: 7.5pt; text-align: left; line-height: 1.3; }
