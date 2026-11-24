@@ -9,6 +9,24 @@ Next.js (Vercel) + Supabase (Postgres).
 | `/porteria` | Escanear con lector USB o con la cámara. Verde = pasa, rojo = usada/falsa, naranja = otra fecha |
 | `/panel` | Cierre de caja por taquilla y método, aforo del día, ingresos por puerta, buscar por cédula/celular para reimprimir, reenviar o anular |
 | `/c/<token>` | Página **pública** que recibe el cliente por WhatsApp con sus QR |
+| `/cortesias` | (admin) Cortesías una a una o en lote, con tope configurable |
+| `/comprar` | Página **pública** de compra en línea (Wompi) |
+| `/api/salud` | Chequeo público: dice si la configuración está bien, sin mostrar claves |
+
+## Roles
+- **Personal** (`ACCESS_PASSWORD`): vender, abrir/cerrar su caja, escanear, buscar y reimprimir.
+- **Administrador** (`ADMIN_PASSWORD`): además panel, anulaciones (con motivo), cortesías, tope de cortesías y exportar a Excel.
+- En "Puesto" se escribe el nombre del puesto (Taquilla 1, Puerta 2, Administración…). Queda registrado en cada venta, escaneo y arqueo.
+
+## Caja (arqueo)
+Cada taquilla abre caja con su base en efectivo antes de vender. Al cerrar, escribe el efectivo contado: el sistema calcula la diferencia contra base + ventas en efectivo e imprime el reporte de cierre para firmar.
+
+## Venta en línea (Wompi)
+1. Crear cuenta de comercio en Wompi y, en *Desarrolladores*, copiar: llave pública, secreto de integridad y secreto de eventos.
+2. En Vercel: `VENTA_ONLINE=1`, `WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_EVENTS_SECRET` → Redeploy.
+3. En Wompi → *URL de eventos*: `https://TU-DOMINIO/api/online/webhook`
+4. Probar primero con las llaves de prueba (`pub_test_...`).
+Las boletas en línea quedan "pendientes" y no sirven en la puerta hasta que Wompi confirma el pago (el sistema verifica firma y monto).
 
 ## Cómo funciona la seguridad
 - Cada boleta tiene un código aleatorio + una **firma HMAC** (`QR_SECRET`). Un QR inventado o modificado se rechaza sin tocar la base de datos ("CÓDIGO FALSO").
@@ -18,12 +36,14 @@ Next.js (Vercel) + Supabase (Postgres).
 - Todo el personal entra con la clave `ACCESS_PASSWORD` y el nombre del puesto (Taquilla 1, Puerta 2…). Ese nombre queda en cada venta y escaneo → cierre de caja por taquilla.
 
 ## Puesta en marcha (≈20 minutos)
-1. **Supabase**: crear proyecto (región São Paulo, la más cercana) → *SQL Editor* → pegar y ejecutar `supabase/schema.sql`.
+1. **Supabase**: crear proyecto → *SQL Editor* → ejecutar `supabase/schema.sql` y luego `supabase/migracion-002.sql`.
 2. Copiar de *Project Settings → API*: la URL y la `service_role key`.
 3. **GitHub**: subir esta carpeta a un repositorio privado.
 4. **Vercel**: *New Project* → importar el repo → en *Environment Variables* poner las de `.env.example`:
    - `QR_SECRET`: frase larga aleatoria. **No cambiarla durante el evento** (invalidaría todas las boletas).
    - `ACCESS_PASSWORD`: clave del personal.
+   - `ADMIN_PASSWORD`: clave de administración (distinta).
+   - `ORGANIZADOR_NOMBRE`, `ORGANIZADOR_NIT`, `ORGANIZADOR_CONTACTO`: aparecen en la política de datos (`/privacidad`, revisar con abogado).
    - `MODO_PRUEBA=1` para probar hoy; **`MODO_PRUEBA=0` antes del 4 de diciembre**.
 5. Deploy. Entrar a `/login`.
 
@@ -43,8 +63,7 @@ Local: `cp .env.example .env.local`, llenar valores, `npm install`, `npm run dev
 
 **Portería con celular**: botón "Usar cámara" (pide permiso de cámara; requiere HTTPS, Vercel ya lo da).
 
-## Pendiente (Fase 2)
-- Factura electrónica vía proveedor tecnológico (columnas `factura_numero` / `factura_estado` ya creadas).
-- Venta en línea con pasarela de pagos.
+## Pendiente
+- Factura electrónica automática vía proveedor tecnológico. Hoy se capturan los datos de quien la pide y salen en el Excel.
 - Envío automático por WhatsApp (API oficial de Meta).
 - Modo sin conexión en portería.

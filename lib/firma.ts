@@ -75,18 +75,21 @@ export function tokenLegible(token: string): string {
 
 // ---------- Sesión del personal ----------
 export const COOKIE_SESION = "pt_sesion";
+export type Rol = "admin" | "personal";
+export type Sesion = { nombre: string; rol: Rol };
 
-export async function crearSesion(nombre: string): Promise<string> {
-  const n = encodeURIComponent(nombre);
-  return `${n}.${await firmar("S" + n, 22)}`;
+export async function crearSesion(nombre: string, rol: Rol): Promise<string> {
+  const cuerpo = `${encodeURIComponent(nombre)}~${rol}`;
+  return `${cuerpo}.${await firmar("S" + cuerpo, 22)}`;
 }
 
-export async function leerSesion(valor: string | undefined): Promise<string | null> {
+export async function leerSesion(valor: string | undefined): Promise<Sesion | null> {
   if (!valor) return null;
   const i = valor.lastIndexOf(".");
   if (i < 1) return null;
-  const n = valor.slice(0, i);
-  const sig = valor.slice(i + 1);
-  if (!igual(sig, await firmar("S" + n, 22))) return null;
-  try { return decodeURIComponent(n); } catch { return null; }
+  const cuerpo = valor.slice(0, i);
+  if (!igual(valor.slice(i + 1), await firmar("S" + cuerpo, 22))) return null;
+  const [n, rol] = cuerpo.split("~");
+  if (rol !== "admin" && rol !== "personal") return null;
+  try { return { nombre: decodeURIComponent(n), rol }; } catch { return null; }
 }

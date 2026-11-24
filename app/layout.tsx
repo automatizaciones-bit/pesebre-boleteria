@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import Barra from "@/components/Barra";
 import EstadoSistema from "@/components/EstadoSistema";
-import { usuarioActual } from "@/lib/db";
+import { sesionActual } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Boletería · El Gran Pesebre de Tenjo 2026",
@@ -11,12 +11,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#0a0f24", width: "device-width", initialScale: 1 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const usuario = await usuarioActual();
+  const sesion = await sesionActual();
   return (
     <html lang="es">
       <body>
-        {usuario && <Barra usuario={usuario} />}
-        {usuario && <EstadoSistema />}
+        {sesion && <Barra usuario={sesion.nombre} rol={sesion.rol} />}
+        {sesion && <EstadoSistema />}
         {children}
       </body>
     </html>

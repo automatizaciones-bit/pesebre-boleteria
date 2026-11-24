@@ -2,9 +2,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Barra({ usuario }: { usuario: string }) {
+export default function Barra({ usuario, rol }: { usuario: string; rol: "admin" | "personal" }) {
   const ruta = usePathname();
-  if (ruta.startsWith("/c/") || ruta === "/login") return null;
+  if (ruta.startsWith("/c/") || ruta === "/login" || ruta.startsWith("/comprar") || ruta === "/privacidad") return null;
   const salir = async () => {
     await fetch("/api/logout", { method: "POST" });
     location.href = "/login";
@@ -12,7 +12,7 @@ export default function Barra({ usuario }: { usuario: string }) {
   const enlaces = [
     ["/taquilla", "🎟️ Taquilla"],
     ["/porteria", "📷 Portería"],
-    ["/panel", "📊 Panel"],
+    ...(rol === "admin" ? [["/cortesias", "🎁 Cortesías"], ["/panel", "📊 Panel"]] : []),
   ];
   return (
     <header className="barra">
@@ -22,7 +22,7 @@ export default function Barra({ usuario }: { usuario: string }) {
           <Link key={href} href={href} className={ruta.startsWith(href) ? "activo" : ""}>{txt}</Link>
         ))}
       </nav>
-      <span className="usuario">👤 {usuario}</span>
+      <span className="usuario">👤 {usuario}{rol === "admin" ? " · admin" : ""}</span>
       <button className="btn sec chico" onClick={salir}>Salir</button>
     </header>
   );

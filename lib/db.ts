@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { COOKIE_SESION, leerSesion, tokenBoleta } from "./firma";
+import { COOKIE_SESION, leerSesion, tokenBoleta, Sesion } from "./firma";
 
 let cliente: SupabaseClient | null = null;
 
@@ -50,10 +50,15 @@ export function explicar(e: unknown): string {
   return m;
 }
 
-/** Nombre del usuario (taquilla/puerta) de la sesión actual, o null. */
-export async function usuarioActual(): Promise<string | null> {
+/** Sesión actual (nombre del puesto + rol), o null. */
+export async function sesionActual(): Promise<Sesion | null> {
   const c = await cookies();
   return leerSesion(c.get(COOKIE_SESION)?.value);
+}
+
+/** Nombre del puesto (taquilla/puerta) de la sesión actual, o null. */
+export async function usuarioActual(): Promise<string | null> {
+  return (await sesionActual())?.nombre ?? null;
 }
 
 export type BoletaDB = {
@@ -64,6 +69,9 @@ export type CompraDB = {
   id: number; token: string; cedula: string; nombre: string; celular: string;
   fecha_visita: string; adultos: number; ninos: number; menores: number; total: number;
   metodo_pago: string; taquilla: string; anulada: boolean; created_at: string;
+  canal?: string; estado_pago?: string; email?: string | null; referencia_pago?: string | null;
+  autorizado_por?: string | null; motivo?: string | null; anulada_por?: string | null; anulada_motivo?: string | null;
+  requiere_factura?: boolean; factura_datos?: Record<string, string> | null;
   boletas?: BoletaDB[];
 };
 

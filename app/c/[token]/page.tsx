@@ -24,6 +24,13 @@ export default async function MisBoletas({ params }: { params: Promise<{ token: 
         {compra.nombre} · {fechaLarga(compra.fecha_visita)}
       </p>
       {compra.anulada && <div className="error">Esta compra fue anulada.</div>}
+      {!compra.anulada && compra.estado_pago === "pendiente" && (
+        <div className="aviso">⏳ Tu pago todavía se está confirmando. Las boletas se activan apenas se apruebe; recarga esta página en unos minutos.</div>
+      )}
+      {!compra.anulada && compra.estado_pago === "rechazado" && (
+        <div className="error">El pago no fue aprobado, así que estas boletas no son válidas. <a href="/comprar">Volver a comprar</a></div>
+      )}
+      {compra.canal === "cortesia" && <div className="aviso" style={{ marginBottom: 10 }}>🎁 Cortesía</div>}
       <div className="aviso" style={{ textAlign: "left", marginBottom: 16 }}>
         Muestra cada código QR en la entrada. <b>Cada código sirve una sola vez</b> y sólo el día indicado.
         Sube el brillo de la pantalla para escanear más rápido.

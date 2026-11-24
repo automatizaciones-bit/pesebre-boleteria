@@ -5,6 +5,7 @@ import { fechaLarga } from "@/lib/config";
 type Res = {
   resultado: string; tipo?: string; nombre?: string; cedula?: string; fecha_visita?: string;
   usada_at?: string; puerta?: string; grupo_total?: number; grupo_usadas?: number;
+  canal?: string; motivo?: string;
 };
 
 const TIPO: Record<string, string> = { adulto: "ADULTO", nino: "NIÑO 6–14", menor: "MENOR DE 6" };
@@ -40,6 +41,8 @@ function Pantalla({ r }: { r: Res | null }) {
       <div className="resultado ok">
         <div className="grande">✔ PUEDE INGRESAR</div>
         <div className="grande">{TIPO[r.tipo ?? ""]}</div>
+        {r.canal === "cortesia" && <div className="medio" style={{ background: "#5b2a86", borderRadius: 12, padding: "6px 14px", alignSelf: "center" }}>🎁 CORTESÍA{r.motivo ? ` · ${r.motivo}` : ""}</div>}
+        {r.canal === "online" && <div className="medio">🌐 Compra en línea</div>}
         <div className="medio">{r.nombre} · CC {r.cedula}</div>
         {(r.grupo_total ?? 0) > 1 && <div>Grupo: {r.grupo_usadas} de {r.grupo_total} ya ingresaron</div>}
       </div>
@@ -57,6 +60,9 @@ function Pantalla({ r }: { r: Res | null }) {
         <div className="medio">Esta boleta es para el {fechaLarga(r.fecha_visita ?? "")}</div>
         <div>{r.nombre} · CC {r.cedula}</div>
       </div>
+    );
+    case "pendiente_pago": return (
+      <div className="resultado alerta"><div className="grande">⚠ PAGO SIN CONFIRMAR</div><div className="medio">Compra en línea aún no pagada. Envíe a taquilla.</div><div>{r.nombre} · CC {r.cedula}</div></div>
     );
     case "anulada": return (
       <div className="resultado malo"><div className="grande">✖ BOLETA ANULADA</div><div className="medio">No puede ingresar con esta boleta</div></div>

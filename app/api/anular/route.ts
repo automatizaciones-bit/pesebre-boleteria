@@ -1,25 +1,17 @@
-import { explicar, db, json, usuarioActual } from "@/lib/db";
+import { explicar, db, json, sesionActual } from "@/lib/db";
 
-// Anula una compra completa: sus boletas que no se han usado dejan de servir.
+// Anula una compra completa (sólo administrador). Exige motivo y queda registrado quién lo hizo.
 export async function POST(req: Request) {
-  try {
-  const usuario = await usuarioActual();
-  const { id } = await req.json().catch(() => ({}));
+  const s = await sesionActual();
+  if (!s || s.rol !== "admin") return json({ error: "Requiere clave de administrador" }, 403);
+  const { id, motivo } = await req.json().catch(() => ({}));
   const compraId = Number(id);
+  const m = String(motivo ?? "").trim().slice(0, 200);
   if (!compraId) return json({ error: "Compra inválida" }, 400);
-
-  const { error: e1 } = await db().from("compras")
-    .update({ anulada: true, anulada_at: new Date().toISOString() })
-    .eq("id", compraId).eq("anulada", false);
-  if (e1) return json({ error: e1.message }, 500);
-
-  const { error: e2 } = await db().from("boletas")
-    .update({ estado: "anulada" }).eq("compra_id", compraId).eq("estado", "valida");
-  if (e2) return json({ error: e2.message }, 500);
-
-  await db().from("escaneos").insert({ codigo: `compra:${compraId}`, resultado: "compra_anulada", puerta: usuario });
-  return json({ ok: true });
-  } catch (e) {
-    return json({ error: explicar(e) }, 500);
-  }
+  if (m.length < 4) return json({ error: "Escribe el motivo de la anulación" }, 400);
+  try {
+    const { data, error } = await db().rpc("anular_compra", { p_id: compraId, p_por: s.nombre, p_motivo: m });
+    if (error) return json({ error: explicar(error) }, 500);
+    return json(data, data.ok ? 200 : 400);
+  } catch (e) { return json({ error: explicar(e) }, 500); }
 }

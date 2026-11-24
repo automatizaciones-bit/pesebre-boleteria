@@ -6,6 +6,9 @@ export type Compra = {
   id: number; token: string; cedula: string; nombre: string; celular: string;
   fecha_visita: string; adultos: number; ninos: number; menores: number; total: number;
   metodo_pago: string; taquilla: string; anulada: boolean; created_at: string;
+  canal?: string; estado_pago?: string; email?: string | null; referencia_pago?: string | null;
+  autorizado_por?: string | null; motivo?: string | null; anulada_por?: string | null; anulada_motivo?: string | null;
+  requiere_factura?: boolean; factura_datos?: Record<string, string> | null;
   boletas: Boleta[];
 };
 
@@ -23,10 +26,10 @@ export function linkWhatsApp(c: Compra, origen: string, fechaLarga: (s: string) 
   const msg =
 `🎄 *El Gran Pesebre de Tenjo 2026* 🎄
 
-Hola ${primerNombre}, ¡gracias por tu compra!
+${c.canal === "cortesia" ? `Hola ${primerNombre}, tienes una *cortesía* para visitarnos. ¡Te esperamos!` : `Hola ${primerNombre}, ¡gracias por tu compra!`}
 
 📅 Fecha de visita: *${fechaLarga(c.fecha_visita)}*
-🎟️ Boletas: ${partes}
+🎟️ ${c.canal === "cortesia" ? "Cortesías" : "Boletas"}: ${partes}
 
 Aquí están tus boletas con código QR:
 ${origen}/c/${c.token}
