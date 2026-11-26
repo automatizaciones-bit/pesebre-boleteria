@@ -370,11 +370,13 @@ export default function Taquilla({ precios, fechas, puesto }: { precios: Precios
                   {compra.requiere_factura && <><br />🧾 Pendiente factura electrónica</>}
                   {estadoFoto && <><br />{estadoFoto}</>}
                   {envio && envio.correo !== "no configurado" && <><br />✉️ Correo: {envio.correo}</>}
-                  {envio && envio.whatsapp !== "no configurado" && <><br />💬 WhatsApp automático: {envio.whatsapp}</>}
+                  {envio && envio.whatsapp !== "no configurado" && <><br />💬 WhatsApp automático: {envio.whatsapp === "enviado" ? <b style={{ color: "#5be08a" }}>✅ enviado al cliente, no hay que hacer nada más</b> : envio.whatsapp}</>}
                 </p>
                 <div className="acciones" style={{ marginBottom: 14 }}>
                   <button className="btn" onClick={() => { setImprimir("boletas"); setTimeout(() => window.print(), 100); }}>🖨️ Imprimir</button>
-                  <a className="btn wa" target="_blank" rel="noreferrer" href={linkWhatsApp(compra, origen, fechaLarga)}>WhatsApp</a>
+                  {envio?.whatsapp === "enviado"
+                    ? <a className="btn sec" target="_blank" rel="noreferrer" title="Ya se envió automático. Úsalo solo si el cliente dice que no le llegó." href={linkWhatsApp(compra, origen, fechaLarga)}>Reenviar manual</a>
+                    : <a className="btn wa" target="_blank" rel="noreferrer" href={linkWhatsApp(compra, origen, fechaLarga)}>WhatsApp</a>}
                   <a className="btn sec" target="_blank" rel="noreferrer" href={`/c/${compra.token}`}>Ver enlace</a>
                 </div>
                 <div className="boletas-lista" style={{ maxHeight: "62vh", overflow: "auto", paddingRight: 4 }}>
