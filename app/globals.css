@@ -129,6 +129,10 @@ input:focus, select:focus { border-color: var(--oro); box-shadow: 0 0 0 3px rgba
   font-family: var(--serif); font-size: 2.2rem; color: #ff8b8b; font-weight: 800; transform: rotate(-12deg);
 }
 
+.grupo-tabla { margin: 10px auto 4px; max-width: 280px; text-align: left; font-size: .95rem; }
+.grupo-fila { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed rgba(232,179,58,.25); }
+.grupo-fila.total { border-bottom: 0; color: var(--oro-claro); }
+
 /* ---------- Portería ---------- */
 .porteria-entrada { font-size: 1.4rem; text-align: center; letter-spacing: 2px; }
 .resultado {

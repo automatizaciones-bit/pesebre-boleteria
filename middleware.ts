@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_SESION, leerSesion } from "./lib/firma";
 
 // Rutas sólo para administración
-const SOLO_ADMIN = [/^\/panel/, /^\/cortesias/, /^\/api\/panel/, /^\/api\/anular/, /^\/api\/cortesias/, /^\/api\/exportar/, /^\/api\/config/];
+const SOLO_ADMIN = [/^\/panel/, /^\/cortesias/, /^\/api\/panel/, /^\/api\/anular/, /^\/api\/cortesias/, /^\/api\/exportar/, /^\/api\/config/, /^\/api\/verificar/];
 
 export async function middleware(req: NextRequest) {
   const s = await leerSesion(req.cookies.get(COOKIE_SESION)?.value);
@@ -28,5 +28,5 @@ export async function middleware(req: NextRequest) {
 
 // Públicas: login, salud, boletas del cliente (/c/), compra en línea, privacidad
 export const config = {
-  matcher: ["/((?!login|api/login|api/salud|api/online|c/|comprar|privacidad|_next/|logo|icon|favicon).*)"],
+  matcher: ["/((?!login|api/login|api/salud|api/online|api/qr|c/|comprar|privacidad|_next/|logo|icon|favicon).*)"],
 };

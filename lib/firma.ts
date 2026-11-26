@@ -68,6 +68,22 @@ export async function verificarTokenBoleta(entrada: string): Promise<string | nu
   return igual(sig, await firmar("B" + codigo)) ? codigo : null;
 }
 
+// ---------- QR de grupo (uno por compra) ----------
+export async function tokenGrupo(codigo: string): Promise<string> {
+  return `PG${codigo}${await firmar("G" + codigo)}`;
+}
+
+/** Reconoce un QR de grupo (PG…) o uno individual antiguo (PT…). null si es falso o está mal leído. */
+export async function verificarToken(entrada: string): Promise<{ tipo: "grupo" | "boleta"; codigo: string } | null> {
+  const t = entrada.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (t.length !== 20) return null;
+  const codigo = t.slice(2, 12);
+  const sig = t.slice(12);
+  if (t.startsWith("PG")) return igual(sig, await firmar("G" + codigo)) ? { tipo: "grupo", codigo } : null;
+  if (t.startsWith("PT")) return igual(sig, await firmar("B" + codigo)) ? { tipo: "boleta", codigo } : null;
+  return null;
+}
+
 /** Agrupa el token en bloques para leerlo/digitarlo a mano: PTAB CDEF ... */
 export function tokenLegible(token: string): string {
   return token.replace(/(.{4})/g, "$1 ").trim();

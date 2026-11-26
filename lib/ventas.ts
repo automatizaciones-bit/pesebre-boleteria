@@ -3,7 +3,9 @@ import { aleatorio } from "./firma";
 import { fechasVenta, precios, TipoBoleta } from "./config";
 
 export type Canal = "taquilla" | "cortesia" | "online";
-export const METODOS_TAQUILLA = ["efectivo", "datafono", "transferencia", "qr"];
+export const METODOS_TAQUILLA = ["efectivo", "datafono", "nequi", "bancolombia", "daviplata", "transferencia", "qr"];
+/** Métodos que el administrador debe confirmar contra el extracto / la app del banco */
+export const METODOS_A_VERIFICAR = ["nequi", "bancolombia", "daviplata", "transferencia", "qr"];
 const TIPOS_DOC = ["CC", "NIT", "CE", "PAS"];
 
 export type DatosCompra = {
@@ -102,12 +104,13 @@ export async function guardarCompra(d: DatosCompra): Promise<{ compra?: Awaited<
   agregar("menor", d.menores);
 
   const fila = {
-    token: aleatorio(16), cedula: d.cedula, nombre: d.nombre, celular: d.celular, email: d.email,
+    token: aleatorio(16), codigo: aleatorio(10), cedula: d.cedula, nombre: d.nombre, celular: d.celular, email: d.email,
     fecha_visita: d.fecha_visita, adultos: d.adultos, ninos: d.ninos, menores: d.menores, total,
     metodo_pago: d.metodo_pago, taquilla: d.taquilla, canal: d.canal,
     estado_pago: d.canal === "online" ? "pendiente" : "pagado",
     referencia_pago: d.referencia_pago, autorizado_por: d.autorizado_por ?? null, motivo: d.motivo,
     acepta_datos: d.acepta_datos, requiere_factura: d.requiere_factura, factura_datos: d.factura_datos,
+    verificacion: d.canal === "taquilla" && METODOS_A_VERIFICAR.includes(d.metodo_pago) ? "pendiente" : "no_aplica",
   };
 
   try {
@@ -123,6 +126,7 @@ export async function guardarCompra(d: DatosCompra): Promise<{ compra?: Awaited<
       if (error.code !== "23505") return { error: explicar(error) };
       lista.forEach((x) => (x.codigo = aleatorio(10)));   // código repetido (muy improbable): reintentar
       fila.token = aleatorio(16);
+      fila.codigo = aleatorio(10);
     }
     return { error: "No se pudo guardar, intenta de nuevo" };
   } catch (e) {

@@ -1,5 +1,6 @@
 import { json, sesionActual } from "@/lib/db";
 import { limpiar, validar, guardarCompra } from "@/lib/ventas";
+import { notificarCompra, origenPublico } from "@/lib/notificar";
 
 // Cortesías (sólo administrador). Acepta una o varias (lote) en la misma llamada.
 // Cada cortesía lleva titular con nombre y cédula; el tope se controla en la base de datos.
@@ -24,5 +25,11 @@ export async function POST(req: Request) {
       break;
     }
   }
-  return json({ resultados, creadas: resultados.filter((r) => r.compra).length });
+  // Envío automático (correo / WhatsApp) para lotes pequeños; en lotes grandes se usa "Reenviar".
+  const creadas = resultados.filter((r) => r.compra) as { compra: { id: number } }[];
+  if (creadas.length <= 25) {
+    const origen = origenPublico(req);
+    for (const r of creadas) Object.assign(r, { envio: await notificarCompra(r.compra.id, origen) });
+  }
+  return json({ resultados, creadas: creadas.length });
 }

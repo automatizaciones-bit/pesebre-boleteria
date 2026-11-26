@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { db, conTokens, CompraDB } from "@/lib/db";
-import { BoletaPantalla } from "@/components/Boletas";
+import { GrupoPantalla } from "@/components/Boletas";
 import type { Compra } from "@/components/tipos";
 import { fechaLarga } from "@/lib/config";
 
@@ -32,11 +32,11 @@ export default async function MisBoletas({ params }: { params: Promise<{ token: 
       )}
       {compra.canal === "cortesia" && <div className="aviso" style={{ marginBottom: 10 }}>🎁 Cortesía</div>}
       <div className="aviso" style={{ textAlign: "left", marginBottom: 16 }}>
-        Muestra cada código QR en la entrada. <b>Cada código sirve una sola vez</b> y sólo el día indicado.
+        Muestra este código QR en la entrada. <b>Sirve una sola vez</b> para todo el grupo y sólo el día indicado.
         Sube el brillo de la pantalla para escanear más rápido.
       </div>
       <div className="boletas-lista">
-        {compra.boletas.map((b, i) => <BoletaPantalla key={b.id} b={b} c={compra} i={i} />)}
+        <GrupoPantalla c={compra} />
       </div>
     </main>
   );

@@ -1,4 +1,5 @@
 import { db, json, explicar } from "@/lib/db";
+import { notificarCompra, origenPublico } from "@/lib/notificar";
 import { consultarTransaccion } from "@/lib/wompi";
 
 // Estado de una compra en línea. Si viene ?id= (lo agrega Wompi al volver), se verifica
@@ -19,6 +20,10 @@ export async function GET(req: Request) {
           p_token: ref, p_pasarela_id: t.id, p_estado: t.status, p_monto_centavos: t.amount_in_cents,
         });
         if (error) return json({ error: explicar(error) }, 500);
+        if (data.ok && data.estado === "pagado" && !data.repetido) {
+          const { data: x } = await db().from("compras").select("id").eq("token", ref).single();
+          if (x) await notificarCompra(x.id, origenPublico(req));
+        }
         return json({ estado: data.estado ?? c.estado_pago, error: data.ok ? undefined : data.error });
       }
     }

@@ -1,5 +1,6 @@
 import { db, json, sesionActual } from "@/lib/db";
 import { limpiar, validar, guardarCompra } from "@/lib/ventas";
+import { notificarCompra, origenPublico } from "@/lib/notificar";
 
 // Venta en taquilla. Exige caja abierta para el puesto (arqueo).
 export async function POST(req: Request) {
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
   }
 
   const r = await guardarCompra(d);
-  if (r.error) return json({ error: "Error guardando la venta: " + r.error }, 500);
-  return json({ compra: r.compra });
+  if (r.error || !r.compra) return json({ error: "Error guardando la venta: " + r.error }, 500);
+  const envio = await notificarCompra(r.compra.id, origenPublico(req));
+  return json({ compra: r.compra, envio });
 }

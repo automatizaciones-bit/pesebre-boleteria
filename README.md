@@ -36,7 +36,7 @@ Las boletas en línea quedan "pendientes" y no sirven en la puerta hasta que Wom
 - Todo el personal entra con la clave `ACCESS_PASSWORD` y el nombre del puesto (Taquilla 1, Puerta 2…). Ese nombre queda en cada venta y escaneo → cierre de caja por taquilla.
 
 ## Puesta en marcha (≈20 minutos)
-1. **Supabase**: crear proyecto → *SQL Editor* → ejecutar `supabase/schema.sql` y luego `supabase/migracion-002.sql`.
+1. **Supabase**: crear proyecto → *SQL Editor* → ejecutar en orden `supabase/schema.sql`, `supabase/migracion-002.sql` y `supabase/migracion-003.sql`.
 2. Copiar de *Project Settings → API*: la URL y la `service_role key`.
 3. **GitHub**: subir esta carpeta a un repositorio privado.
 4. **Vercel**: *New Project* → importar el repo → en *Environment Variables* poner las de `.env.example`:
@@ -62,6 +62,19 @@ Local: `cp .env.example .env.local`, llenar valores, `npm install`, `npm run dev
   y dejar la térmica como impresora predeterminada.
 
 **Portería con celular**: botón "Usar cámara" (pide permiso de cámara; requiere HTTPS, Vercel ya lo da).
+
+## QR por grupo
+Cada compra genera **un solo QR** para todo el grupo (adultos, niños y menores). Al escanearlo entra el grupo completo; un segundo escaneo muestra "YA INGRESARON" con hora y puerta.
+
+## Pagos por Nequi, Bancolombia, Daviplata u otro banco
+La taquilla exige la referencia y permite tomar foto del comprobante. La venta queda **por verificar**: el administrador la revisa en el Panel contra la app del banco y la marca ✅ o ❌ (❌ anula la compra y su QR deja de servir).
+
+## Envíos automáticos (opcionales)
+- **Correo** (resend.com): `RESEND_API_KEY`, `EMAIL_FROM`, `ADMIN_EMAIL`. Envía la entrada con el QR al cliente y el informe de cierre al cajero y al administrador.
+- **Resumen de cierre por WhatsApp**: `ADMIN_WHATSAPP` (celular del administrador).
+- **WhatsApp automático** (Meta Cloud API): `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_TEMPLATE`, `WHATSAPP_LANG`.
+  La plantilla se aprueba una sola vez: encabezado **imagen** (el QR) y cuerpo con 4 variables: {{1}} nombre, {{2}} fecha, {{3}} grupo, {{4}} enlace.
+- `PUBLIC_URL`: dominio público (si se usa uno propio).
 
 ## Pendiente
 - Factura electrónica automática vía proveedor tecnológico. Hoy se capturan los datos de quien la pide y salen en el Excel.

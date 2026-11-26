@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { COOKIE_SESION, leerSesion, tokenBoleta, Sesion } from "./firma";
+import { COOKIE_SESION, leerSesion, tokenBoleta, tokenGrupo, Sesion } from "./firma";
 
 let cliente: SupabaseClient | null = null;
 
@@ -72,6 +72,8 @@ export type CompraDB = {
   canal?: string; estado_pago?: string; email?: string | null; referencia_pago?: string | null;
   autorizado_por?: string | null; motivo?: string | null; anulada_por?: string | null; anulada_motivo?: string | null;
   requiere_factura?: boolean; factura_datos?: Record<string, string> | null;
+  codigo?: string | null; verificacion?: string; comprobante_path?: string | null;
+  verificado_por?: string | null; email_enviado_at?: string | null; whatsapp_enviado_at?: string | null;
   boletas?: BoletaDB[];
 };
 
@@ -82,7 +84,7 @@ export async function conTokens(compra: CompraDB) {
       .sort((a, b) => a.id - b.id)
       .map(async (b) => ({ ...b, token: await tokenBoleta(b.codigo) }))
   );
-  return { ...compra, boletas };
+  return { ...compra, boletas, qr: compra.codigo ? await tokenGrupo(compra.codigo) : null };
 }
 
 export function json(data: unknown, status = 200) {

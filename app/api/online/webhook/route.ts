@@ -1,4 +1,5 @@
 import { db, json, explicar } from "@/lib/db";
+import { notificarCompra, origenPublico } from "@/lib/notificar";
 import { eventoAutentico, wompi } from "@/lib/wompi";
 
 // URL de eventos para configurar en Wompi → Desarrolladores → "URL de Eventos":
@@ -17,6 +18,10 @@ export async function POST(req: Request) {
       p_token: t.reference, p_pasarela_id: t.id, p_estado: t.status, p_monto_centavos: t.amount_in_cents,
     });
     if (error) return json({ error: explicar(error) }, 500);
+    if (data.ok && data.estado === "pagado" && !data.repetido) {
+      const { data: x } = await db().from("compras").select("id").eq("token", t.reference).single();
+      if (x) await notificarCompra(x.id, origenPublico(req));
+    }
     return json(data);
   } catch (e) {
     return json({ error: explicar(e) }, 500);

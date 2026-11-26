@@ -6,7 +6,17 @@ type Res = {
   resultado: string; tipo?: string; nombre?: string; cedula?: string; fecha_visita?: string;
   usada_at?: string; puerta?: string; grupo_total?: number; grupo_usadas?: number;
   canal?: string; motivo?: string;
+  grupo?: boolean; ingresaron_ahora?: number; adultos?: number; ninos?: number; menores?: number;
+  verificacion?: string; metodo_pago?: string;
 };
+
+function composicion(r: Res) {
+  return [
+    r.adultos ? `${r.adultos} adulto${r.adultos > 1 ? "s" : ""}` : "",
+    r.ninos ? `${r.ninos} niño${r.ninos > 1 ? "s" : ""} (6-14)` : "",
+    r.menores ? `${r.menores} menor${r.menores > 1 ? "es" : ""} de 6` : "",
+  ].filter(Boolean).join(" · ");
+}
 
 const TIPO: Record<string, string> = { adulto: "ADULTO", nino: "NIÑO 6–14", menor: "MENOR DE 6" };
 
@@ -37,7 +47,17 @@ function Pantalla({ r }: { r: Res | null }) {
     </div>
   );
   switch (r.resultado) {
-    case "ok": return (
+    case "ok": if (r.grupo) return (
+      <div className="resultado ok">
+        <div className="grande">✔ {(r.ingresaron_ahora ?? 0) > 1 ? `PUEDEN INGRESAR ${r.ingresaron_ahora}` : "PUEDE INGRESAR 1"}</div>
+        <div className="medio" style={{ background: "rgba(0,0,0,.18)", borderRadius: 12, padding: "8px 14px", alignSelf: "center" }}>{composicion(r)}</div>
+        {r.canal === "cortesia" && <div className="medio" style={{ background: "#5b2a86", borderRadius: 12, padding: "6px 14px", alignSelf: "center" }}>🎁 CORTESÍA{r.motivo ? ` · ${r.motivo}` : ""}</div>}
+        {r.canal === "online" && <div className="medio">🌐 Compra en línea</div>}
+        <div className="medio">{r.nombre} · CC {r.cedula}</div>
+        {r.verificacion === "pendiente" && <div style={{ opacity: .85 }}>Pago por {r.metodo_pago} pendiente de verificar por administración</div>}
+      </div>
+    );
+    return (
       <div className="resultado ok">
         <div className="grande">✔ PUEDE INGRESAR</div>
         <div className="grande">{TIPO[r.tipo ?? ""]}</div>
@@ -47,7 +67,14 @@ function Pantalla({ r }: { r: Res | null }) {
         {(r.grupo_total ?? 0) > 1 && <div>Grupo: {r.grupo_usadas} de {r.grupo_total} ya ingresaron</div>}
       </div>
     );
-    case "usada": return (
+    case "usada": if (r.grupo) return (
+      <div className="resultado malo">
+        <div className="grande">✖ YA INGRESARON</div>
+        <div className="medio">Grupo de {r.grupo_total} ({composicion(r)}) entró a las {hora(r.usada_at)} por {r.puerta}</div>
+        <div>{r.nombre} · CC {r.cedula}</div>
+      </div>
+    );
+    return (
       <div className="resultado malo">
         <div className="grande">✖ YA FUE USADA</div>
         <div className="medio">Ingresó a las {hora(r.usada_at)} por {r.puerta}</div>

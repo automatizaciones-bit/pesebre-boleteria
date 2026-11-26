@@ -2,17 +2,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { ZonaImpresion } from "@/components/Boletas";
 import { Compra, linkWhatsApp } from "@/components/tipos";
-import { NOMBRE_METODO, hora } from "@/components/Campos";
+import { NOMBRE_METODO, hora, ReporteCaja, EstadoCaja } from "@/components/Campos";
 import { fechaLarga, pesos } from "@/lib/config";
 
 type Caja = { taquilla: string; metodo_pago: string; compras: number; adultos: number; ninos: number; menores: number; total: number };
-type CajaArqueo = { id: number; taquilla: string; base: number; abierta_at: string; cerrada_at: string | null; efectivo_sistema: number | null; contado: number | null; diferencia: number | null; notas: string | null };
+type CajaArqueo = { id: number; taquilla: string; cajero?: string | null; email?: string | null; base: number; abierta_at: string; cerrada_at: string | null; efectivo_sistema: number | null; contado: number | null; diferencia: number | null; notas: string | null; resumen?: EstadoCaja | null };
+type PorVerificar = { id: number; created_at: string; taquilla: string; metodo_pago: string; referencia_pago: string | null; total: number; nombre: string; cedula: string; tiene_foto: boolean };
 type Resumen = {
   caja: Caja[];
   canales: { canal: string; compras: number; boletas: number; total: number }[];
   cortesias: { autorizado_por: string; motivo: string; compras: number; boletas: number }[];
   cortesias_tope: { tope: number; usadas: number };
   cajas: CajaArqueo[];
+  metodos: { metodo_pago: string; compras: number; boletas: number; total: number }[];
+  por_verificar: PorVerificar[];
+  grupos: { total: number; ingresados: number };
   online_pendientes: number;
   aforo: { total: number; ingresadas: number; pendientes: number; adultos: number; ninos: number; menores: number };
   por_puerta: { puerta: string; ingresos: number }[];
@@ -24,7 +28,7 @@ const hoy = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" 
 const CANAL: Record<string, string> = { taquilla: "🎟️ Taquilla", online: "🌐 En línea", cortesia: "🎁 Cortesías" };
 const RESULTADO: Record<string, [string, string]> = {
   ok: ["INGRESÓ", "#5ee28f"], usada: ["YA USADA", "#ff9b9b"], otra_fecha: ["OTRA FECHA", "#ffc46b"], anulada: ["ANULADA", "#ff9b9b"],
-  firma_invalida: ["FALSA", "#ff9b9b"], no_existe: ["NO EXISTE", "#ff9b9b"], pendiente_pago: ["SIN PAGAR", "#ffc46b"], compra_anulada: ["COMPRA ANULADA", "#a9b0cc"],
+  firma_invalida: ["FALSA", "#ff9b9b"], no_existe: ["NO EXISTE", "#ff9b9b"], error: ["ERROR", "#ffc46b"], pendiente_pago: ["SIN PAGAR", "#ffc46b"], compra_anulada: ["COMPRA ANULADA", "#a9b0cc"],
 };
 
 export default function Panel() {
@@ -34,6 +38,10 @@ export default function Panel() {
   const [q, setQ] = useState("");
   const [compras, setCompras] = useState<Compra[] | null>(null);
   const [imprimir, setImprimir] = useState<Compra | null>(null);
+  const [cierreImp, setCierreImp] = useState<CajaArqueo | null>(null);
+  const [rechazando, setRechazando] = useState<number | null>(null);
+  const [motivoRechazo, setMotivoRechazo] = useState("");
+  const [aviso, setAviso] = useState("");
   const [anulando, setAnulando] = useState<number | null>(null);
   const [motivo, setMotivo] = useState("");
   const [desde, setDesde] = useState(hoy());
@@ -58,7 +66,25 @@ export default function Panel() {
     setCompras(d.compras);
   };
 
-  const reimprimir = (c: Compra) => { setImprimir(c); setTimeout(() => window.print(), 250); };
+  const reimprimir = (c: Compra) => { setCierreImp(null); setImprimir(c); setTimeout(() => window.print(), 250); };
+  const imprimirCierre = (k: CajaArqueo) => { setImprimir(null); setCierreImp(k); setTimeout(() => window.print(), 250); };
+
+  const verificar = async (id: number, ok: boolean) => {
+    const resp = await fetch("/api/verificar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ok, motivo: motivoRechazo }) });
+    const d = await resp.json();
+    if (!resp.ok) return setError(d.error);
+    setRechazando(null); setMotivoRechazo("");
+    setAviso(ok ? `Pago de la compra #${id} verificado ✅` : `Pago de la compra #${id} rechazado: la compra quedó anulada`);
+    await cargar();
+  };
+
+  const reenviar = async (c: Compra) => {
+    const email = c.email || prompt("Correo del cliente para enviar la entrada:") || "";
+    const resp = await fetch("/api/reenviar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: c.id, email }) });
+    const d = await resp.json();
+    if (!resp.ok) return setError(d.error);
+    setAviso(`Compra #${c.id}: correo ${d.envio.correo} · WhatsApp ${d.envio.whatsapp}`);
+  };
 
   const anular = async (id: number) => {
     const resp = await fetch("/api/anular", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, motivo }) });
@@ -86,6 +112,7 @@ export default function Panel() {
           <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} style={{ width: "auto" }} />
         </div>
         {error && <div className="error" style={{ marginBottom: 14 }}>{error}</div>}
+        {aviso && <div className="aviso" style={{ marginBottom: 14 }}>{aviso}</div>}
         {(r?.online_pendientes ?? 0) > 0 && <div className="aviso" style={{ marginBottom: 14 }}>🌐 {r!.online_pendientes} compra(s) en línea esperando confirmación de pago.</div>}
 
         <div className="kpis">
@@ -94,7 +121,7 @@ export default function Panel() {
           <div className="tarjeta kpi"><div className="etiqueta">Visitantes con boleta para este día</div><div className="valor">{r?.aforo.total ?? "—"}</div>
             <div className="suave">{r?.aforo.adultos ?? 0} adultos · {r?.aforo.ninos ?? 0} niños · {r?.aforo.menores ?? 0} menores</div></div>
           <div className="tarjeta kpi"><div className="etiqueta">Ya ingresaron</div><div className="valor">{r?.aforo.ingresadas ?? "—"}</div>
-            <div className="barra-progreso"><div style={{ width: pct + "%" }} /></div><div className="suave">{pct}% · faltan {r?.aforo.pendientes ?? 0}</div></div>
+            <div className="barra-progreso"><div style={{ width: pct + "%" }} /></div><div className="suave">{pct}% · faltan {r?.aforo.pendientes ?? 0} · grupos {r?.grupos?.ingresados ?? 0}/{r?.grupos?.total ?? 0}</div></div>
           <div className="tarjeta kpi"><div className="etiqueta">Cortesías del evento</div><div className="valor">{cort?.usadas ?? "—"}<span style={{ fontSize: "1rem" }}> / {cort?.tope ?? "—"}</span></div>
             <div className="suave"><a href="/cortesias">Gestionar cortesías →</a></div></div>
           <div className="tarjeta kpi"><div className="etiqueta">Acumulado del evento</div><div className="valor">{pesos(r?.acumulado.total ?? 0)}</div><div className="suave">{r?.acumulado.boletas ?? 0} boletas · {r?.acumulado.compras ?? 0} compras</div></div>
@@ -102,7 +129,37 @@ export default function Panel() {
 
         <div className="grid-2">
           <section className="tarjeta">
-            <h2>📈 Por canal (este día)</h2>
+            <h2>🔎 Pagos por verificar {(r?.por_verificar ?? []).length > 0 && <span style={{ color: "#ffc46b" }}>({r!.por_verificar.length})</span>}</h2>
+            {(r?.por_verificar ?? []).length === 0
+              ? <p className="suave">No hay pagos pendientes de verificar. 👌</p>
+              : <p className="suave" style={{ marginTop: -6, fontSize: ".85rem" }}>Revisa cada pago en la app de Nequi / Bancolombia del negocio (monto, hora y referencia) y márcalo.</p>}
+            {(r?.por_verificar ?? []).map((v) => (
+              <div key={v.id} className="compra-item">
+                <b>#{v.id} · {pesos(v.total)}</b> · {NOMBRE_METODO[v.metodo_pago] ?? v.metodo_pago} · Ref. <b>{v.referencia_pago ?? "—"}</b>
+                <div className="suave" style={{ fontSize: ".85rem" }}>{hora(v.created_at)} · {v.taquilla} · {v.nombre} (CC {v.cedula})</div>
+                <div className="acciones">
+                  {v.tiene_foto ? <a className="btn sec chico" target="_blank" rel="noreferrer" href={`/api/comprobante?id=${v.id}`}>📎 Ver comprobante</a> : <span className="suave" style={{ fontSize: ".85rem" }}>Sin foto</span>}
+                  <button className="btn chico" onClick={() => verificar(v.id, true)}>✅ Sí llegó</button>
+                  {rechazando === v.id ? (
+                    <div style={{ display: "flex", gap: 6, width: "100%", marginTop: 6 }}>
+                      <input placeholder="¿Por qué se rechaza?" value={motivoRechazo} onChange={(e) => setMotivoRechazo(e.target.value)} style={{ padding: 8 }} />
+                      <button className="btn peligro chico" disabled={motivoRechazo.trim().length < 4} onClick={() => verificar(v.id, false)}>Rechazar y anular</button>
+                      <button className="btn sec chico" onClick={() => setRechazando(null)}>No</button>
+                    </div>
+                  ) : <button className="btn peligro chico" onClick={() => setRechazando(v.id)}>❌ No llegó</button>}
+                </div>
+              </div>
+            ))}
+
+            <h2 style={{ marginTop: 22 }}>💳 Por método de pago (este día)</h2>
+            <table>
+              <thead><tr><th>Método</th><th className="num">Pagos</th><th className="num">Personas</th><th className="num">Total</th></tr></thead>
+              <tbody>
+                {(r?.metodos ?? []).map((m) => <tr key={m.metodo_pago}><td>{NOMBRE_METODO[m.metodo_pago] ?? m.metodo_pago}</td><td className="num">{m.compras}</td><td className="num">{m.boletas}</td><td className="num">{pesos(m.total)}</td></tr>)}
+              </tbody>
+            </table>
+
+            <h2 style={{ marginTop: 22 }}>📈 Por canal (este día)</h2>
             <table>
               <thead><tr><th>Canal</th><th className="num">Compras</th><th className="num">Boletas</th><th className="num">Total</th></tr></thead>
               <tbody>
@@ -134,7 +191,9 @@ export default function Panel() {
             <table><tbody>
               {(r?.cajas ?? []).map((k) => (
                 <tr key={k.id}>
-                  <td><b>{k.taquilla}</b><br /><span className="suave" style={{ fontSize: ".8rem" }}>{hora(k.abierta_at)} → {k.cerrada_at ? hora(k.cerrada_at) : "abierta"}</span></td>
+                  <td><b>{k.taquilla}</b>{k.cajero ? ` · ${k.cajero}` : ""}<br /><span className="suave" style={{ fontSize: ".8rem" }}>{hora(k.abierta_at)} → {k.cerrada_at ? hora(k.cerrada_at) : "abierta"}</span>
+                    {k.cerrada_at && k.resumen && <><br /><span className="suave" style={{ fontSize: ".8rem" }}>Vendió {pesos(k.resumen.total ?? 0)} · {Object.entries(k.resumen.por_metodo ?? {}).map(([m, v]) => `${NOMBRE_METODO[m] ?? m} ${pesos(v.total)}`).join(" · ")}</span></>}
+                    {k.cerrada_at && <><br /><button className="btn sec chico" style={{ marginTop: 4 }} onClick={() => imprimirCierre(k)}>🖨️ Informe</button></>}</td>
                   <td className="num">Base {pesos(k.base)}{k.cerrada_at && <><br />Contado {pesos(k.contado ?? 0)}</>}</td>
                   <td className="num">{k.cerrada_at
                     ? <b style={{ color: (k.diferencia ?? 0) === 0 ? "#5ee28f" : "#ff9b9b" }}>{(k.diferencia ?? 0) > 0 ? "+" : ""}{pesos(k.diferencia ?? 0)}</b>
@@ -174,6 +233,8 @@ export default function Panel() {
                 <b>#{c.id} · {c.nombre}</b> <span className="suave">{CANAL[c.canal ?? "taquilla"]}</span>
                 {c.anulada && <span style={{ color: "#ff9b9b" }}> (ANULADA{c.anulada_motivo ? `: ${c.anulada_motivo}` : ""}{c.anulada_por ? ` · ${c.anulada_por}` : ""})</span>}
                 {c.estado_pago && c.estado_pago !== "pagado" && <span style={{ color: "#ffc46b" }}> · pago {c.estado_pago}</span>}
+                {c.verificacion === "pendiente" && <span style={{ color: "#ffc46b" }}> · por verificar</span>}
+                {c.verificacion === "verificado" && <span style={{ color: "#5ee28f" }}> · pago verificado</span>}
                 <div className="suave" style={{ fontSize: ".9rem" }}>
                   {fechaLarga(c.fecha_visita)} · {c.boletas.length} boletas · {pesos(c.total)} · {NOMBRE_METODO[c.metodo_pago] ?? c.metodo_pago}{c.referencia_pago ? ` (${c.referencia_pago})` : ""} · {c.taquilla}
                   {c.motivo && <><br />Cortesía: {c.motivo} · autorizó {c.autorizado_por}</>}
@@ -184,6 +245,7 @@ export default function Panel() {
                     <button className="btn chico" onClick={() => reimprimir(c)}>🖨️ Reimprimir</button>
                     <a className="btn wa chico" target="_blank" rel="noreferrer" href={linkWhatsApp(c, origen, fechaLarga)}>WhatsApp</a>
                     <a className="btn sec chico" target="_blank" rel="noreferrer" href={`/c/${c.token}`}>Ver</a>
+                    <button className="btn sec chico" onClick={() => reenviar(c)}>✉️ Reenviar</button>
                     {anulando === c.id ? (
                       <div style={{ display: "flex", gap: 6, width: "100%", marginTop: 6 }}>
                         <input placeholder="Motivo de la anulación" value={motivo} onChange={(e) => setMotivo(e.target.value)} style={{ padding: 8 }} />
@@ -214,7 +276,9 @@ export default function Panel() {
           </section>
         </div>
       </main>
-      <ZonaImpresion compra={imprimir} />
+      {cierreImp && cierreImp.cerrada_at
+        ? <div id="zona-impresion"><ReporteCaja r={{ caja: cierreImp, resumen: cierreImp.resumen }} taquilla={cierreImp.taquilla} /></div>
+        : <ZonaImpresion compra={imprimir} />}
     </>
   );
 }

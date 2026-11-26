@@ -63,12 +63,16 @@ export function CamposFactura({ activa, setActiva, f, setF }: { activa: boolean;
 }
 
 export type EstadoCaja = {
-  abierta: boolean; base?: number; abierta_at?: string; boletas?: number; anuladas?: number;
-  por_metodo?: Record<string, { compras: number; total: number }>;
+  abierta: boolean; base?: number; abierta_at?: string; boletas?: number; anuladas?: number; anuladas_total?: number;
+  cajero?: string | null; email?: string | null; total?: number; compras?: number;
+  por_metodo?: Record<string, { compras: number; total: number; boletas?: number }>;
+  por_tipo?: { adultos: number; ninos: number; menores: number };
+  por_verificar?: { compras: number; total: number };
 };
 
 export const NOMBRE_METODO: Record<string, string> = {
-  efectivo: "Efectivo", datafono: "Datáfono", transferencia: "Transferencia", qr: "QR", cortesia: "Cortesía", online: "En línea",
+  efectivo: "Efectivo", datafono: "Datáfono", nequi: "Nequi", bancolombia: "Bancolombia", daviplata: "Daviplata",
+  transferencia: "Otro banco", qr: "QR", cortesia: "Cortesía", online: "En línea",
 };
 
 export function hora(iso?: string | null) {
@@ -76,33 +80,54 @@ export function hora(iso?: string | null) {
 }
 
 /** Reporte de cierre de caja en formato tirilla 80 mm. */
-export function ReporteCaja({ r, taquilla }: { r: { caja: Record<string, any>; resumen: EstadoCaja }; taquilla: string }) {
+export function ReporteCaja({ r, taquilla }: { r: { caja: Record<string, any>; resumen?: EstadoCaja | null }; taquilla: string }) {
   const k = r.caja;
-  const metodos = Object.entries(r.resumen.por_metodo ?? {});
+  const res: EstadoCaja = (r.resumen ?? k.resumen ?? { abierta: false }) as EstadoCaja;
+  const metodos = Object.entries(res.por_metodo ?? {});
+  const signo = (n: number) => (n > 0 ? "+" : n < 0 ? "-" : "") + pesos(Math.abs(n));
   return (
     <div className="termica">
       <img className="logo" src="/logo-print.png" alt="" />
       <div className="t-evento">CIERRE DE CAJA</div>
-      <div className="t-fecha">{taquilla}</div>
+      <div className="t-fecha">{k.taquilla ?? taquilla}</div>
+      <div className="t-dato"><span>Cajero:</span><b>{k.cajero ?? "—"}</b></div>
       <div className="t-linea" />
       <div className="t-dato"><span>Apertura:</span><span>{hora(k.abierta_at)}</span></div>
       <div className="t-dato"><span>Cierre:</span><span>{hora(k.cerrada_at)}</span></div>
       <div className="t-linea" />
+      {metodos.length === 0 && <div className="t-dato"><span>Sin ventas</span><span>$0</span></div>}
       {metodos.map(([m, v]) => (
         <div className="t-dato" key={m}><span>{NOMBRE_METODO[m] ?? m} ({v.compras})</span><span>{pesos(v.total)}</span></div>
       ))}
-      <div className="t-dato"><span>Boletas vendidas:</span><span>{r.resumen.boletas ?? 0}</span></div>
-      <div className="t-dato"><span>Ventas anuladas:</span><span>{r.resumen.anuladas ?? 0}</span></div>
+      <div className="t-dato"><b>TOTAL VENDIDO</b><b>{pesos(res.total ?? 0)}</b></div>
+      <div className="t-dato"><span>Compras / personas:</span><span>{res.compras ?? 0} / {res.boletas ?? 0}</span></div>
+      <div className="t-dato"><span>Adult. · Niños · Men.:</span><span>{res.por_tipo?.adultos ?? 0} · {res.por_tipo?.ninos ?? 0} · {res.por_tipo?.menores ?? 0}</span></div>
+      <div className="t-dato"><span>Anuladas:</span><span>{res.anuladas ?? 0} · {pesos(res.anuladas_total ?? 0)}</span></div>
+      <div className="t-dato"><span>Por verificar:</span><span>{res.por_verificar?.compras ?? 0} · {pesos(res.por_verificar?.total ?? 0)}</span></div>
       <div className="t-linea" />
       <div className="t-dato"><span>Base inicial:</span><span>{pesos(k.base)}</span></div>
       <div className="t-dato"><span>+ Efectivo vendido:</span><span>{pesos(k.efectivo_sistema)}</span></div>
       <div className="t-dato"><b>= Debe haber:</b><b>{pesos(k.base + k.efectivo_sistema)}</b></div>
       <div className="t-dato"><span>Contado:</span><span>{pesos(k.contado)}</span></div>
-      <div className="t-dato"><b>DIFERENCIA:</b><b>{k.diferencia > 0 ? "+" : ""}{pesos(k.diferencia)}</b></div>
+      <div className="t-dato"><b>DIFERENCIA:</b><b>{signo(k.diferencia)}</b></div>
       {k.notas && <div className="t-legal" style={{ marginTop: 6 }}>Notas: {k.notas}</div>}
       <div className="t-linea" />
       <div className="t-legal" style={{ marginTop: 14 }}>Firma cajero: ______________________</div>
       <div className="t-legal" style={{ marginTop: 14 }}>Firma supervisor: __________________</div>
     </div>
   );
+}
+
+/** Reduce una foto a JPG de máx. 1400 px para subirla rápido. */
+export async function comprimirFoto(f: File): Promise<Blob> {
+  try {
+    const bmp = await createImageBitmap(f);
+    const esc = Math.min(1, 1400 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(bmp.width * esc); cv.height = Math.round(bmp.height * esc);
+    cv.getContext("2d")!.drawImage(bmp, 0, 0, cv.width, cv.height);
+    return await new Promise<Blob>((ok) => cv.toBlob((b) => ok(b ?? f), "image/jpeg", 0.75));
+  } catch {
+    return f;
+  }
 }

@@ -1,5 +1,5 @@
 import { explicar, db, json, usuarioActual } from "@/lib/db";
-import { verificarTokenBoleta } from "@/lib/firma";
+import { verificarToken } from "@/lib/firma";
 
 export async function POST(req: Request) {
   const puerta = await usuarioActual();
@@ -9,15 +9,17 @@ export async function POST(req: Request) {
   const leido = String(token ?? "").slice(0, 200);
 
   // 1) La firma se revisa ANTES de tocar la base de datos: un QR inventado nunca pasa.
-  const codigo = await verificarTokenBoleta(leido);
-  if (!codigo) {
+  const v = await verificarToken(leido);
+  if (!v) {
     await Promise.resolve().then(() => db().from("escaneos").insert({ codigo: leido.slice(0, 40), resultado: "firma_invalida", puerta })).catch(() => {});
     return json({ resultado: "firma_invalida" });
   }
 
   // 2) Marcado atómico en la base de datos.
   try {
-    const { data, error } = await db().rpc("validar_boleta", { p_codigo: codigo, p_puerta: puerta });
+    const { data, error } = v.tipo === "grupo"
+      ? await db().rpc("validar_grupo", { p_codigo: v.codigo, p_puerta: puerta })
+      : await db().rpc("validar_boleta", { p_codigo: v.codigo, p_puerta: puerta });
     if (error) return json({ resultado: "error", error: explicar(error) }, 500);
     return json(data);
   } catch (e) {
