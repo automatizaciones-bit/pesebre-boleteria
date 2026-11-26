@@ -45,3 +45,34 @@ export async function enviarPlantillaWhatsApp(o: {
     return { ok: false, error: String((e as Error).message ?? e) };
   }
 }
+
+const GRAPH = "https://graph.facebook.com/v21.0";
+
+async function graph(ruta: string, cuerpo?: unknown) {
+  const w = whatsappConfig();
+  const r = await fetch(`${GRAPH}/${ruta}`, {
+    method: cuerpo ? "POST" : "GET",
+    headers: { Authorization: `Bearer ${w.token}`, "Content-Type": "application/json" },
+    body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+    cache: "no-store",
+  });
+  const datos = await r.json().catch(() => ({}));
+  return { ok: r.ok, datos };
+}
+
+/** Estado del número en Meta (nombre aprobado, conectado, calidad, límite). */
+export async function estadoNumeroWhatsApp() {
+  const w = whatsappConfig();
+  if (!w.activo) return { configurado: false as const };
+  const r = await graph(
+    `${w.phoneId}?fields=display_phone_number,verified_name,name_status,status,quality_rating,code_verification_status,platform_type,messaging_limit_tier`,
+  );
+  return { configurado: true as const, ok: r.ok, plantilla: w.plantilla, idioma: w.idioma, ...r.datos };
+}
+
+/** Registra (activa) el número en la API de la nube con un PIN de 6 dígitos. */
+export async function registrarNumeroWhatsApp(pin: string) {
+  const w = whatsappConfig();
+  if (!w.activo) return { ok: false, datos: { error: { message: "WhatsApp no configurado en Vercel" } } };
+  return graph(`${w.phoneId}/register`, { messaging_product: "whatsapp", pin });
+}

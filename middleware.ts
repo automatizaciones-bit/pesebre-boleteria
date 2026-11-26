@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_SESION, leerSesion } from "./lib/firma";
 
 // Rutas sólo para administración
-const SOLO_ADMIN = [/^\/panel/, /^\/cortesias/, /^\/api\/panel/, /^\/api\/anular/, /^\/api\/cortesias/, /^\/api\/exportar/, /^\/api\/config/, /^\/api\/verificar/];
+const SOLO_ADMIN = [/^\/panel/, /^\/cortesias/, /^\/api\/panel/, /^\/api\/anular/, /^\/api\/cortesias/, /^\/api\/exportar/, /^\/api\/config/, /^\/api\/verificar/, /^\/api\/whatsapp/];
 
 export async function middleware(req: NextRequest) {
   const s = await leerSesion(req.cookies.get(COOKIE_SESION)?.value);

@@ -109,7 +109,10 @@ export default function Panel() {
       <main className="contenedor pantalla">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <h1 style={{ margin: 0 }}>Panel · {fechaLarga(fecha)}</h1>
-          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} style={{ width: "auto" }} />
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <a className="btn sec chico" href="/panel/whatsapp">💬 WhatsApp</a>
+            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} style={{ width: "auto" }} />
+          </div>
         </div>
         {error && <div className="error" style={{ marginBottom: 14 }}>{error}</div>}
         {aviso && <div className="aviso" style={{ marginBottom: 14 }}>{aviso}</div>}
