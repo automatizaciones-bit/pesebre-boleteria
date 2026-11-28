@@ -197,3 +197,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .termica .t-linea { border-top: 1px dashed #000; margin: 2mm 0; }
 .termica .t-dato { display: flex; justify-content: space-between; font-size: 9pt; text-align: left; }
 .termica .t-legal { font-size: 7.5pt; text-align: left; line-height: 1.3; }
+
+/* ---------- Capacitación ---------- */
+.franja-capacitacion { background: repeating-linear-gradient(45deg, #e98a15, #e98a15 14px, #d27a0c 14px, #d27a0c 28px); color: #1a1205; font-weight: 800; text-align: center; padding: 7px 12px; font-size: .95rem; position: sticky; top: 0; z-index: 60; }
+.sello-prueba { border: 3px dashed #d92d2d; color: #d92d2d; font-weight: 900; text-align: center; padding: 4px 8px; margin: 6px 0; letter-spacing: .5px; }
+@media print { .franja-capacitacion { display: none; } }

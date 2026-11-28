@@ -15,6 +15,7 @@ export type ResumenCaja = {
 export type CajaCerrada = {
   id: number; taquilla: string; cajero?: string | null; email?: string | null; base: number; abierta_at: string; cerrada_at: string;
   efectivo_sistema: number; contado: number; diferencia: number; notas?: string | null; resumen?: ResumenCaja | null;
+  prueba?: boolean;
 };
 
 const hora = (iso?: string | null) =>
@@ -25,7 +26,7 @@ const dif = (n: number) => (n === 0 ? "$0 (cuadra)" : n > 0 ? `+${pesos(n)} (sob
 export function textoCierre(k: CajaCerrada) {
   const r = k.resumen ?? {};
   const metodos = Object.entries(r.por_metodo ?? {}).map(([m, v]) => `• ${NOMBRE_METODO[m] ?? m}: ${v.compras} pago(s) · ${pesos(v.total)}`).join("\n");
-  return `🧮 *CIERRE DE CAJA · ${k.taquilla}*
+  return `${k.prueba ? "🧪 *CAPACITACIÓN (no es real)*\n" : ""}🧮 *CIERRE DE CAJA · ${k.taquilla}*
 Cajero: ${k.cajero ?? "—"}
 ${hora(k.abierta_at)} → ${hora(k.cerrada_at)}
 
@@ -68,4 +69,27 @@ export function htmlCierre(k: CajaCerrada) {
     </table>
     <p style="font-size:20px;text-align:center;margin:16px 0 4px;color:${color}"><b>Diferencia: ${esc(dif(k.diferencia))}</b></p>
     ${k.notas ? `<p style="color:#a9b0cc">Notas: ${esc(k.notas)}</p>` : ""}`);
+}
+
+/** Lineas del informe para el PDF (sin emojis ni negritas de WhatsApp). */
+export function lineasCierre(k: CajaCerrada): { t: string; fuerte?: boolean; der?: string }[] {
+  const r = k.resumen ?? {};
+  const L: { t: string; fuerte?: boolean; der?: string }[] = [];
+  if (k.prueba) L.push({ t: "CAPACITACIÓN - NO ES REAL", fuerte: true });
+  L.push({ t: `Cajero: ${k.cajero ?? "-"}` }, { t: `Puesto/usuario: ${k.taquilla}` }, { t: `Apertura: ${hora(k.abierta_at)}` }, { t: `Cierre: ${hora(k.cerrada_at)}` }, { t: "" });
+  L.push({ t: "VENTAS POR MÉTODO DE PAGO", fuerte: true });
+  const metodos = Object.entries(r.por_metodo ?? {});
+  if (!metodos.length) L.push({ t: "Sin ventas", der: "$0" });
+  for (const [m, v] of metodos) L.push({ t: `${NOMBRE_METODO[m] ?? m} (${v.compras} pago${v.compras === 1 ? "" : "s"})`, der: pesos(v.total) });
+  L.push({ t: "Total vendido", der: pesos(r.total ?? 0), fuerte: true });
+  L.push({ t: "Compras / personas", der: `${r.compras ?? 0} / ${r.boletas ?? 0}` });
+  L.push({ t: "Adultos / Niños / Menores", der: `${r.por_tipo?.adultos ?? 0} / ${r.por_tipo?.ninos ?? 0} / ${r.por_tipo?.menores ?? 0}` });
+  L.push({ t: "Ventas anuladas", der: `${r.anuladas ?? 0} - ${pesos(r.anuladas_total ?? 0)}` });
+  L.push({ t: "Pagos por verificar (Nequi/banco)", der: `${r.por_verificar?.compras ?? 0} - ${pesos(r.por_verificar?.total ?? 0)}` });
+  L.push({ t: "" }, { t: "ARQUEO DE EFECTIVO", fuerte: true });
+  L.push({ t: "Base", der: pesos(k.base) }, { t: "+ Efectivo vendido", der: pesos(k.efectivo_sistema) });
+  L.push({ t: "= Debe haber", der: pesos(k.base + k.efectivo_sistema), fuerte: true }, { t: "Contado", der: pesos(k.contado) });
+  L.push({ t: "Diferencia", der: dif(k.diferencia), fuerte: true });
+  if (k.notas) L.push({ t: "" }, { t: `Notas: ${k.notas}` });
+  return L;
 }

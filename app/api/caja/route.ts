@@ -1,6 +1,9 @@
 import { db, json, sesionActual, explicar } from "@/lib/db";
 import { enviarCorreo, correoConfig, emailValido } from "@/lib/correo";
 import { htmlCierre, textoCierre, CajaCerrada } from "@/lib/cierre";
+import { enviarLibreWhatsApp, numeroAdmin } from "@/lib/whatsapp";
+import { firmaPdf } from "@/lib/pdfCierre";
+import { origenPublico } from "@/lib/notificar";
 
 // Arqueo de caja por puesto:
 //   GET            → estado de la caja abierta
@@ -41,6 +44,7 @@ export async function POST(req: Request) {
       if (email && !emailValido(email)) return json({ error: "Correo inválido" }, 400);
       const { data, error } = await db().rpc("abrir_caja", { p_taquilla: s.nombre, p_base: monto(b.base), p_cajero: cajero, p_email: email });
       if (error) return json({ error: explicar(error) }, 500);
+      if (data.ok && s.prueba) await db().from("cajas").update({ prueba: true }).eq("taquilla", s.nombre).is("cerrada_at", null);
       return json(data, data.ok ? 200 : 400);
     }
     if (b.accion === "cerrar") {
@@ -62,7 +66,20 @@ export async function POST(req: Request) {
           correo = r.ok ? `enviado a ${para.join(", ")}` : `error: ${r.error}`;
         }
       }
-      return json({ ...data, envio: { correo }, whatsapp_admin: linkWhatsAppAdmin(k), texto: textoCierre(k) });
+      // Informe al administrador por WhatsApp (texto + PDF), dentro de la ventana de 24 horas
+      const pdf = `${origenPublico(req)}/api/cierre-pdf/${k.id}?f=${await firmaPdf(k.id)}`;
+      let whatsapp = "no configurado (falta ADMIN_WHATSAPP)";
+      const admin = numeroAdmin();
+      if (admin) {
+        const t = await enviarLibreWhatsApp(admin, { tipo: "texto", texto: textoCierre(k) });
+        if (t.ok) {
+          const d = await enviarLibreWhatsApp(admin, { tipo: "documento", link: pdf, nombre: `cierre-caja-${k.id}-${(k.cajero ?? k.taquilla).replace(/[^\w-]+/g, "_")}.pdf`, leyenda: `Cierre de caja N.° ${k.id} · ${k.cajero ?? k.taquilla}` });
+          whatsapp = d.ok ? "enviado al administrador (texto y PDF)" : `texto enviado; PDF: ${d.error}`;
+        } else whatsapp = t.ventana_cerrada
+          ? "no enviado: el administrador debe escribirle «hola» al WhatsApp del Pesebre (se abre la ventana de 24 h). Usa el botón para enviarlo a mano."
+          : `error: ${t.error}`;
+      }
+      return json({ ...data, envio: { correo, whatsapp }, pdf, whatsapp_admin: linkWhatsAppAdmin(k), texto: textoCierre(k) });
     }
     return json({ error: "Acción inválida" }, 400);
   } catch (e) { return json({ error: explicar(e) }, 500); }

@@ -6,7 +6,9 @@ import { notificarCompra, origenPublico } from "@/lib/notificar";
 export async function POST(req: Request) {
   const s = await sesionActual();
   if (!s) return json({ error: "Sesión vencida" }, 401);
+  if (s.rol === "portero") return json({ error: "Tu usuario sólo tiene acceso a la portería." }, 403);
   const d = limpiar(await req.json().catch(() => ({})), "taquilla", s.nombre);
+  d.prueba = s.prueba;
   const v = validar(d);
   if (v) return json(v, v.confirmar ? 409 : 400);
 

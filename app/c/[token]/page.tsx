@@ -25,6 +25,7 @@ export default async function MisBoletas({ params }: { params: Promise<{ token: 
       <p className="suave" style={{ marginTop: -4 }}>
         {compra.nombre} · {fechaLarga(compra.fecha_visita)}
       </p>
+      {compra.prueba && <div className="error">🧪 Entrada de CAPACITACIÓN (práctica del personal). No es válida para ingresar al evento.</div>}
       {compra.anulada && <div className="error">Esta compra fue anulada.</div>}
       {!compra.anulada && compra.estado_pago === "pendiente" && (
         <div className="aviso">⏳ Tu pago todavía se está confirmando. Las boletas se activan apenas se apruebe; recarga esta página en unos minutos.</div>

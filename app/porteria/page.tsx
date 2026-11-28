@@ -100,6 +100,12 @@ function Pantalla({ r }: { r: Res | null }) {
     case "no_existe": return (
       <div className="resultado malo"><div className="grande">✖ NO REGISTRADA</div><div className="medio">La boleta no existe en el sistema</div></div>
     );
+    case "es_prueba": return (
+      <div className="resultado malo"><div className="grande">✖ QR DE CAPACITACIÓN</div><div className="medio">Es una entrada de práctica del personal. NO es válida para ingresar.</div>{r.nombre && <div>{r.nombre}</div>}</div>
+    );
+    case "es_real": return (
+      <div className="resultado alerta"><div className="grande">⚠ ENTRADA REAL</div><div className="medio">Estás en modo capacitación: este QR es de un cliente real y no se marcó. Escanea solo entradas de práctica.</div></div>
+    );
     case "sin_conexion": return (
       <div className="resultado alerta"><div className="grande">SIN CONEXIÓN</div><div className="medio">Revisa internet y vuelve a escanear</div></div>
     );

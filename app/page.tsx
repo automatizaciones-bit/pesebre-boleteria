@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { sesionActual } from "@/lib/db";
 
 export default async function Inicio() {
   const s = await sesionActual();
   const u = s?.nombre;
+  if (s?.rol === "portero") redirect("/porteria");
   return (
     <main className="contenedor pantalla" style={{ textAlign: "center" }}>
       <img src="/logo.png" alt="Pesebre Tenjo 2026" style={{ width: 260, marginTop: 10 }} />

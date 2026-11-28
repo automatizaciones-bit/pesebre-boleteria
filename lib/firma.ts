@@ -42,6 +42,7 @@ export async function firmar(dato: string, largo = 8): Promise<string> {
   return base32(sig).slice(0, largo);
 }
 
+export function igualTexto(a: string, b: string): boolean { return igual(a, b); }
 function igual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let r = 0;
@@ -91,11 +92,12 @@ export function tokenLegible(token: string): string {
 
 // ---------- Sesión del personal ----------
 export const COOKIE_SESION = "pt_sesion";
-export type Rol = "admin" | "personal";
-export type Sesion = { nombre: string; rol: Rol };
+export type Rol = "admin" | "personal" | "portero";
+/** prueba = usuario de CAPACITACIÓN: todo lo que haga queda aparte de los datos reales. */
+export type Sesion = { nombre: string; rol: Rol; prueba: boolean };
 
-export async function crearSesion(nombre: string, rol: Rol): Promise<string> {
-  const cuerpo = `${encodeURIComponent(nombre)}~${rol}`;
+export async function crearSesion(nombre: string, rol: Rol, prueba = false): Promise<string> {
+  const cuerpo = `${encodeURIComponent(nombre)}~${rol}~${prueba ? "1" : "0"}`;
   return `${cuerpo}.${await firmar("S" + cuerpo, 22)}`;
 }
 
@@ -105,7 +107,7 @@ export async function leerSesion(valor: string | undefined): Promise<Sesion | nu
   if (i < 1) return null;
   const cuerpo = valor.slice(0, i);
   if (!igual(valor.slice(i + 1), await firmar("S" + cuerpo, 22))) return null;
-  const [n, rol] = cuerpo.split("~");
-  if (rol !== "admin" && rol !== "personal") return null;
-  try { return { nombre: decodeURIComponent(n), rol }; } catch { return null; }
+  const [n, rol, p] = cuerpo.split("~");
+  if (rol !== "admin" && rol !== "personal" && rol !== "portero") return null;
+  try { return { nombre: decodeURIComponent(n), rol, prueba: p === "1" }; } catch { return null; }
 }

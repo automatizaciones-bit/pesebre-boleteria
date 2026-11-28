@@ -14,12 +14,12 @@ const METODOS: [string, string][] = [
   ["bancolombia", "🟡 Bancolombia"], ["daviplata", "🔴 Daviplata"], ["transferencia", "🏦 Otro banco"],
 ];
 const A_VERIFICAR = ["nequi", "bancolombia", "daviplata", "transferencia"];
-type Cierre = { caja: Record<string, any>; resumen: EstadoCaja; envio?: { correo: string }; whatsapp_admin?: string | null };
+type Cierre = { caja: Record<string, any>; resumen: EstadoCaja; envio?: { correo: string; whatsapp?: string }; whatsapp_admin?: string | null; pdf?: string };
 type Envio = { correo: string; whatsapp: string };
 
 /* ---------------- Caja: apertura, cierre con arqueo e historial ---------------- */
-function PanelCaja({ caja, recargar, onCierre, imprimirCierre }: {
-  caja: EstadoCaja | null; recargar: () => void; onCierre: (c: Cierre) => void; imprimirCierre: (c: Cierre) => void;
+function PanelCaja({ caja, recargar, onCierre, imprimirCierre, puesto }: {
+  caja: EstadoCaja | null; recargar: () => void; onCierre: (c: Cierre) => void; imprimirCierre: (c: Cierre) => void; puesto: string;
 }) {
   const [base, setBase] = useState("");
   const [cajero, setCajero] = useState("");
@@ -32,8 +32,10 @@ function PanelCaja({ caja, recargar, onCierre, imprimirCierre }: {
   const num = (s: string) => Number(s.replace(/\D/g, "")) || 0;
 
   useEffect(() => {
-    try { setCajero(localStorage.getItem("cajero") ?? ""); setEmail(localStorage.getItem("cajeroEmail") ?? ""); } catch {}
-  }, []);
+    // Con usuario individual el cajero es el mismo usuario; con puesto genérico se recuerda el último nombre.
+    const generico = /^(taquilla|puerta|administraci)/i.test(puesto);
+    try { setCajero(generico ? localStorage.getItem("cajero") ?? "" : puesto); setEmail(localStorage.getItem("cajeroEmail") ?? ""); } catch { setCajero(generico ? "" : puesto); }
+  }, [puesto]);
 
   const enviar = async (cuerpo: object) => {
     setError("");
@@ -249,13 +251,15 @@ export default function Taquilla({ precios, fechas, puesto }: { precios: Precios
     <>
       <main className="contenedor pantalla">
         {sinPermiso && <div className="aviso" style={{ marginBottom: 14 }}>Esa sección requiere la clave de administrador.</div>}
-        <PanelCaja caja={caja} recargar={cargarCaja} onCierre={imprimirCierre} imprimirCierre={imprimirCierre} />
+        <PanelCaja puesto={puesto} caja={caja} recargar={cargarCaja} onCierre={imprimirCierre} imprimirCierre={imprimirCierre} />
         {cierre && imprimir === "caja" && (
           <div className="aviso" style={{ marginBottom: 16 }}>
             ✅ Caja cerrada · diferencia <b>{pesos(cierre.caja.diferencia)}</b>
-            {cierre.envio && <> · Informe por correo: {cierre.envio.correo}</>}
+            {cierre.envio?.correo && cierre.envio.correo !== "no configurado" && <> · Informe por correo: {cierre.envio.correo}</>}
+            {cierre.envio?.whatsapp && <><br />💬 Informe por WhatsApp: {cierre.envio.whatsapp}</>}
             <div className="acciones">
               <button className="btn chico" onClick={() => imprimirCierre(cierre)}>🖨️ Reimprimir informe</button>
+              {cierre.pdf && <a className="btn sec chico" target="_blank" rel="noreferrer" href={cierre.pdf}>📄 Descargar PDF</a>}
               {cierre.whatsapp_admin && <a className="btn wa chico" target="_blank" rel="noreferrer" href={cierre.whatsapp_admin}>Enviar resumen al administrador por WhatsApp</a>}
             </div>
           </div>

@@ -88,3 +88,37 @@ export async function registrarNumeroWhatsApp(pin: string) {
 function limpiarVariable(t: string) {
   return (t || "-").replace(/[\n\r\t]+/g, " · ").replace(/ {4,}/g, "   ").trim().slice(0, 900) || "-";
 }
+
+/** Número del administrador (ADMIN_WHATSAPP) en formato 57XXXXXXXXXX, o null. */
+export function numeroAdmin(): string | null {
+  const n = (process.env.ADMIN_WHATSAPP ?? "").replace(/\D/g, "").replace(/^57(?=3\d{9}$)/, "");
+  return /^3\d{9}$/.test(n) ? `57${n}` : null;
+}
+
+/**
+ * Mensaje libre (texto o documento) dentro de la ventana de 24 horas: sólo funciona si ese número
+ * le escribió al número del Pesebre en las últimas 24 horas. No usa plantilla.
+ * Devuelve ventana_cerrada=true cuando Meta lo rechaza por estar fuera de la ventana (error 131047).
+ */
+export async function enviarLibreWhatsApp(to: string, contenido:
+  | { tipo: "texto"; texto: string }
+  | { tipo: "documento"; link: string; nombre: string; leyenda?: string },
+): Promise<{ ok: boolean; error?: string; ventana_cerrada?: boolean }> {
+  const w = whatsappConfig();
+  if (!w.activo) return { ok: false, error: "whatsapp no configurado" };
+  const cuerpo = contenido.tipo === "texto"
+    ? { type: "text", text: { body: contenido.texto.slice(0, 4000), preview_url: false } }
+    : { type: "document", document: { link: contenido.link, filename: contenido.nombre, caption: contenido.leyenda?.slice(0, 1000) } };
+  try {
+    const r = await fetch(`${GRAPH}/${w.phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${w.token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messaging_product: "whatsapp", recipient_type: "individual", to, ...cuerpo }),
+    });
+    if (r.ok) return { ok: true };
+    const t = await r.text();
+    return { ok: false, error: `WhatsApp ${r.status}: ${t.slice(0, 200)}`, ventana_cerrada: /131047|re-engagement|24 hours/i.test(t) };
+  } catch (e) {
+    return { ok: false, error: String((e as Error).message ?? e) };
+  }
+}

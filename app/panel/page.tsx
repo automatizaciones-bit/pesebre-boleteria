@@ -46,21 +46,24 @@ export default function Panel() {
   const [motivo, setMotivo] = useState("");
   const [desde, setDesde] = useState(hoy());
   const [hasta, setHasta] = useState(hoy());
+  const [cap, setCap] = useState(false);          // ver datos de CAPACITACIÓN en vez de los reales
+  useEffect(() => { try { setCap(new URLSearchParams(location.search).get("prueba") === "1"); } catch {} }, []);
+  const amb = cap ? "&prueba=1" : "";
 
   const cargar = useCallback(async () => {
     try {
-      const resp = await fetch(`/api/panel?fecha=${fecha}`, { cache: "no-store" });
+      const resp = await fetch(`/api/panel?fecha=${fecha}${amb}`, { cache: "no-store" });
       const d = await resp.json();
       if (!resp.ok) throw new Error(d.error);
       setR(d); setError("");
     } catch (e) { setError(String((e as Error).message ?? e)); }
-  }, [fecha]);
+  }, [fecha, amb]);
 
   useEffect(() => { cargar(); const i = setInterval(cargar, 15000); return () => clearInterval(i); }, [cargar]);
 
   const buscar = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const resp = await fetch(`/api/buscar?q=${encodeURIComponent(q)}`);
+    const resp = await fetch(`/api/buscar?q=${encodeURIComponent(q)}${amb}`);
     const d = await resp.json();
     if (!resp.ok) return setError(d.error);
     setCompras(d.compras);
@@ -110,10 +113,13 @@ export default function Panel() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <h1 style={{ margin: 0 }}>Panel · {fechaLarga(fecha)}</h1>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <a className="btn sec chico" href="/panel/usuarios">👥 Usuarios</a>
             <a className="btn sec chico" href="/panel/whatsapp">💬 WhatsApp</a>
+            <a className={cap ? "btn chico" : "btn sec chico"} href={cap ? "/panel" : "/panel?prueba=1"}>{cap ? "Ver datos REALES" : "🧪 Ver capacitación"}</a>
             <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} style={{ width: "auto" }} />
           </div>
         </div>
+        {cap && <div className="franja-capacitacion" style={{ borderRadius: 10, marginBottom: 14, position: "static" }}>🧪 Estás viendo los datos de CAPACITACIÓN (no son reales). <a href="/panel" style={{ color: "#1a1205" }}>Volver a los reales</a></div>}
         {error && <div className="error" style={{ marginBottom: 14 }}>{error}</div>}
         {aviso && <div className="aviso" style={{ marginBottom: 14 }}>{aviso}</div>}
         {(r?.online_pendientes ?? 0) > 0 && <div className="aviso" style={{ marginBottom: 14 }}>🌐 {r!.online_pendientes} compra(s) en línea esperando confirmación de pago.</div>}
@@ -223,7 +229,7 @@ export default function Panel() {
               <div><label style={{ marginTop: 0 }}>Desde</label><input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></div>
               <div><label style={{ marginTop: 0 }}>Hasta</label><input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></div>
             </div>
-            <a className="btn sec" style={{ marginTop: 10 }} href={`/api/exportar?desde=${desde}&hasta=${hasta}`}>Descargar ventas, cortesías y facturas (CSV)</a>
+            <a className="btn sec" style={{ marginTop: 10 }} href={`/api/exportar?desde=${desde}&hasta=${hasta}${amb}`}>Descargar ventas, cortesías y facturas (CSV)</a>
 
             <h2 style={{ marginTop: 22 }}>🔎 Buscar compra</h2>
             <form onSubmit={buscar} style={{ display: "flex", gap: 8 }}>

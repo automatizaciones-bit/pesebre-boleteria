@@ -36,6 +36,7 @@ export function BoletaTermica({ b, c, i }: { b: Boleta; c: Compra; i: number }) 
       <div className="t-fecha">{fechaLarga(b.fecha_visita).toUpperCase()}</div>
       <div className="t-tipo">{NOMBRE_TIPO[b.tipo].toUpperCase()}</div>
       {c.canal === "cortesia" && <div className="t-tipo" style={{ marginTop: 0 }}>CORTESÍA</div>}
+      {c.prueba && <div className="sello-prueba">PRUEBA · CAPACITACIÓN · NO VÁLIDA</div>}
       <div className="t-qr"><Qr texto={b.token} /></div>
       <div className="t-cod">{legible(b.token)}</div>
       <div className="t-linea" />
@@ -93,6 +94,7 @@ export function GrupoPantalla({ c }: { c: Compra }) {
     <div className="boleta">
       <img className="logo" src="/logo.png" alt="Pesebre Tenjo 2026" />
       <div className="fecha">{fechaLarga(c.fecha_visita)}</div>
+      {c.prueba && <div className="sello-prueba">🧪 CAPACITACIÓN · NO VÁLIDA PARA INGRESAR AL EVENTO</div>}
       <div className="tipo-b">{n > 1 ? `ENTRADA GRUPO · ${n} PERSONAS` : "ENTRADA · 1 PERSONA"}{c.canal === "cortesia" ? " · CORTESÍA" : ""}</div>
       <div className="qr"><Qr texto={c.qr} /></div>
       <div className="codigo">{legible(c.qr)}</div>

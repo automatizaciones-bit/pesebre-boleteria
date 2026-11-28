@@ -21,6 +21,7 @@ export type DatosCompra = {
   requiere_factura: boolean;
   factura_datos: { tipo_doc: string; numero: string; razon_social: string; email: string } | null;
   sin_adulto_ok: boolean;
+  prueba?: boolean;            // capacitación
 };
 
 const ent = (v: unknown) => Math.max(0, Math.floor(Number(v) || 0));
@@ -111,6 +112,7 @@ export async function guardarCompra(d: DatosCompra): Promise<{ compra?: Awaited<
     referencia_pago: d.referencia_pago, autorizado_por: d.autorizado_por ?? null, motivo: d.motivo,
     acepta_datos: d.acepta_datos, requiere_factura: d.requiere_factura, factura_datos: d.factura_datos,
     verificacion: d.canal === "taquilla" && METODOS_A_VERIFICAR.includes(d.metodo_pago) ? "pendiente" : "no_aplica",
+    prueba: d.prueba === true,
   };
 
   try {

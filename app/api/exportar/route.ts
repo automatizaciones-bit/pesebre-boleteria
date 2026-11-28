@@ -8,6 +8,7 @@ export async function GET(req: Request) {
   const u = new URL(req.url).searchParams;
   const desde = u.get("desde") ?? hoyBogota();
   const hasta = u.get("hasta") ?? desde;
+  const prueba = u.get("prueba") === "1";
   if (![desde, hasta].every((f) => /^\d{4}-\d{2}-\d{2}$/.test(f))) return new Response("Fechas inválidas", { status: 400 });
 
   // Límites del día en hora de Colombia (UTC-5)
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
   try {
     for (let i = 0; ; i += 1000) {
       const { data, error } = await db().from("compras").select("*")
-        .gte("created_at", ini).lt("created_at", fin).order("id").range(i, i + 999);
+        .gte("created_at", ini).lt("created_at", fin).eq("prueba", prueba).order("id").range(i, i + 999);
       if (error) return new Response(explicar(error), { status: 500 });
       filas.push(...(data ?? []));
       if (!data || data.length < 1000) break;
@@ -67,7 +68,7 @@ export async function GET(req: Request) {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="pesebre-ventas-${desde}${hasta !== desde ? "_a_" + hasta : ""}.csv"`,
+      "Content-Disposition": `attachment; filename="pesebre-${prueba ? "CAPACITACION" : "ventas"}-${desde}${hasta !== desde ? "_a_" + hasta : ""}.csv"`,
       "Cache-Control": "no-store",
     },
   });

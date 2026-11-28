@@ -29,12 +29,14 @@ export async function GET() {
     try {
       const c = createClient(url, llaveServidor()!, { auth: { persistSession: false } });
       const { error } = await c.rpc("resumen_dia", { p_fecha: hoyBogota() });
+      const { error: e4 } = await c.from("usuarios").select("id", { head: true, count: "exact" });
       const { error: e2 } = await c.rpc("estado_caja", { p_taquilla: "_salud_" });
       const { error: e3 } = await c.rpc("cierres_taquilla", { p_taquilla: "_salud_", p_limite: 1 });
-      baseDatos = error || e2 || e3 ? "error" : "ok";
+      baseDatos = error || e2 || e3 || e4 ? "error" : "ok";
       if (error) problemas.push("Base de datos: " + explicar(error));
       else if (e2) problemas.push("Falta ejecutar supabase/migracion-002.sql en Supabase (SQL Editor).");
       else if (e3) problemas.push("Falta ejecutar supabase/migracion-003.sql en Supabase (SQL Editor).");
+      else if (e4) problemas.push("Falta ejecutar supabase/migracion-004.sql en Supabase (SQL Editor).");
     } catch (e) {
       baseDatos = "error";
       problemas.push("Base de datos: " + explicar(e));

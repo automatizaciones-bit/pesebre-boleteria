@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="es">
       <body>
-        {sesion && <Barra usuario={sesion.nombre} rol={sesion.rol} />}
+        {sesion && <Barra usuario={sesion.nombre} rol={sesion.rol} prueba={sesion.prueba} />}
         {sesion && <EstadoSistema />}
         {children}
       </body>

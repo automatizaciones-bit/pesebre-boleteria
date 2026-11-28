@@ -27,11 +27,11 @@ export default function Login() {
       <img src="/logo.png" alt="Pesebre Tenjo 2026" />
       <form className="tarjeta" onSubmit={entrar} style={{ textAlign: "left" }}>
         <h2 style={{ textAlign: "center" }}>Ingreso del personal</h2>
-        <label>Puesto</label>
-        <input list="puestos" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Taquilla 1" autoFocus />
+        <label>Usuario</label>
+        <input list="puestos" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu usuario (ej: Kenide Gómez)" autoFocus autoComplete="username" />
         <datalist id="puestos">{PUESTOS.map((p) => <option key={p} value={p} />)}</datalist>
         <label>Clave</label>
-        <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} />
+        <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="current-password" />
         {error && <div className="error">{error}</div>}
         <button className="btn grande" style={{ marginTop: 18 }} disabled={cargando}>
           {cargando ? "Entrando…" : "Entrar"}
