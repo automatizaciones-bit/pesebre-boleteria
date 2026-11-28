@@ -2,9 +2,31 @@ import QRCode from "qrcode";
 import { db, conTokens, CompraDB } from "./db";
 import { enviarCorreo, correoConfig, plantillaCorreo, esc, emailValido } from "./correo";
 import { enviarPlantillaWhatsApp, whatsappConfig } from "./whatsapp";
-import { fechaLarga, pesos } from "./config";
+import { fechaLarga, pesos, precios } from "./config";
+import { NOMBRE_METODO } from "./cierre";
 
 export type ResultadoEnvio = { correo: string; whatsapp: string };
+
+/** Detalle del recibo con valores: "2 adultos × $40.000 = $80.000 · 1 niño (6-14) × $20.000 = $20.000" */
+export function detalleRecibo(c: { canal?: string; adultos: number; ninos: number; menores: number; boletas?: { tipo: string; precio: number }[] }) {
+  if (c.canal === "cortesia") return `Cortesía sin costo · ${grupoTexto(c)}`;
+  const unit = (tipo: string, def: number) => c.boletas?.find((b) => b.tipo === tipo)?.precio ?? def;
+  const p = precios();
+  const partes: string[] = [];
+  if (c.adultos) { const u = unit("adulto", p.adulto); partes.push(`${c.adultos} adulto${c.adultos > 1 ? "s" : ""} ${pesos(u * c.adultos)}`); }
+  if (c.ninos) { const u = unit("nino", p.nino); partes.push(`${c.ninos} niño${c.ninos > 1 ? "s" : ""} ${pesos(u * c.ninos)}`); }
+  if (c.menores) partes.push(`${c.menores} menor${c.menores > 1 ? "es" : ""} de 6 gratis`);
+  return partes.join(" · ");
+}
+
+/** Una casilla por tipo, para que el WhatsApp se vea como tabla. */
+export function filasRecibo(c: { canal?: string; adultos: number; ninos: number; menores: number; boletas?: { tipo: string; precio: number }[] }) {
+  const p = precios();
+  const unit = (tipo: string, def: number) => c.boletas?.find((b) => b.tipo === tipo)?.precio ?? def;
+  const fila = (n: number, tipo: string, def: number) =>
+    !n ? "0" : c.canal === "cortesia" ? `${n} (cortesía)` : `${n} × ${pesos(unit(tipo, def))} = ${pesos(unit(tipo, def) * n)}`;
+  return { adultos: fila(c.adultos, "adulto", p.adulto), ninos: fila(c.ninos, "nino", p.nino), menores: c.menores ? `${c.menores} (gratis)` : "0" };
+}
 
 function grupoTexto(c: { adultos: number; ninos: number; menores: number }) {
   return [
@@ -63,6 +85,8 @@ export async function notificarCompra(compraId: number, origen: string): Promise
       else {
         const r = await enviarPlantillaWhatsApp({
           celular: c.celular, imagenUrl, nombre: c.nombre.split(" ")[0], fecha: fechaLarga(c.fecha_visita), grupo, enlace,
+          detalle: detalleRecibo(c), total: c.canal === "cortesia" ? "$0" : pesos(c.total),
+          metodo: NOMBRE_METODO[c.metodo_pago] ?? c.metodo_pago, recibo: String(c.id),
         });
         res.whatsapp = r.ok ? "enviado" : `error: ${r.error}`;
         if (r.ok) await db().from("compras").update({ whatsapp_enviado_at: new Date().toISOString() }).eq("id", c.id);

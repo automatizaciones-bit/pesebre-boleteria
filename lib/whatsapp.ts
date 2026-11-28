@@ -16,8 +16,12 @@ export function whatsappConfig() {
   };
 }
 
+/** Plantillas "_v2" llevan el recibo en tabla: 7 variables. Las demás, las 4 originales. */
+export const plantillaConRecibo = () => /_v2$/i.test(whatsappConfig().plantilla);
+
 export async function enviarPlantillaWhatsApp(o: {
   celular: string; imagenUrl: string; nombre: string; fecha: string; grupo: string; enlace: string;
+  detalle?: string; total?: string; metodo?: string; recibo?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const w = whatsappConfig();
   if (!w.activo) return { ok: false, error: "whatsapp no configurado" };
@@ -34,7 +38,10 @@ export async function enviarPlantillaWhatsApp(o: {
           language: { code: w.idioma },
           components: [
             { type: "header", parameters: [{ type: "image", image: { link: o.imagenUrl } }] },
-            { type: "body", parameters: [o.nombre, o.fecha, o.grupo, o.enlace].map((text) => ({ type: "text", text })) },
+            { type: "body", parameters: (plantillaConRecibo()
+                ? [o.nombre, o.fecha, o.detalle ?? o.grupo, o.total ?? "", o.metodo ?? "", o.recibo ?? "", o.enlace]
+                : [o.nombre, o.fecha, o.grupo, o.enlace]
+              ).map((text) => ({ type: "text", text: limpiarVariable(text) })) },
           ],
         },
       }),
@@ -75,4 +82,9 @@ export async function registrarNumeroWhatsApp(pin: string) {
   const w = whatsappConfig();
   if (!w.activo) return { ok: false, datos: { error: { message: "WhatsApp no configurado en Vercel" } } };
   return graph(`${w.phoneId}/register`, { messaging_product: "whatsapp", pin });
+}
+
+/** Meta no acepta saltos de línea, tabs ni más de 4 espacios seguidos en las variables. */
+function limpiarVariable(t: string) {
+  return (t || "-").replace(/[\n\r\t]+/g, " · ").replace(/ {4,}/g, "   ").trim().slice(0, 900) || "-";
 }

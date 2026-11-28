@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { db, conTokens, CompraDB } from "@/lib/db";
 import { GrupoPantalla } from "@/components/Boletas";
 import type { Compra } from "@/components/tipos";
-import { fechaLarga } from "@/lib/config";
+import { fechaLarga, pesos } from "@/lib/config";
+import { detalleRecibo } from "@/lib/notificar";
+import { NOMBRE_METODO } from "@/lib/cierre";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tus boletas · El Gran Pesebre de Tenjo 2026", robots: "noindex" };
@@ -38,6 +40,18 @@ export default async function MisBoletas({ params }: { params: Promise<{ token: 
       <div className="boletas-lista">
         <GrupoPantalla c={compra} />
       </div>
+      <section className="tarjeta" style={{ textAlign: "left", marginTop: 16 }}>
+        <h2 style={{ marginTop: 0 }}>🧾 Recibo N.° {compra.id}</h2>
+        <table className="grupo-tabla"><tbody>
+          {detalleRecibo(compra).split(" · ").map((l) => <tr key={l}><td colSpan={2}>{l}</td></tr>)}
+          <tr><td><b>Total {compra.canal === "cortesia" ? "" : "pagado"}</b></td><td style={{ textAlign: "right" }}><b>{compra.canal === "cortesia" ? "Cortesía" : pesos(compra.total)}</b></td></tr>
+          {compra.canal !== "cortesia" && <tr><td>Método de pago</td><td style={{ textAlign: "right" }}>{NOMBRE_METODO[compra.metodo_pago] ?? compra.metodo_pago}</td></tr>}
+          <tr><td>Fecha de compra</td><td style={{ textAlign: "right" }}>{new Date(compra.created_at).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short" })}</td></tr>
+          <tr><td>Punto de venta</td><td style={{ textAlign: "right" }}>{compra.taquilla}</td></tr>
+          <tr><td>Fecha de visita</td><td style={{ textAlign: "right" }}>{fechaLarga(compra.fecha_visita)}</td></tr>
+        </tbody></table>
+        <p className="suave" style={{ fontSize: ".8rem", marginBottom: 0 }}>Este recibo no reemplaza la factura electrónica.</p>
+      </section>
     </main>
   );
 }

@@ -29,6 +29,8 @@ export async function POST(req: Request) {
       fecha: "sábado 12 de diciembre",
       grupo: "2 adultos, 1 niño",
       enlace: `${origen}/c/PRUEBA`,
+      detalle: "2 adultos $80.000 · 1 niño $20.000",
+      total: "$100.000", metodo: "Efectivo", recibo: "0000",
     });
     if (!r.ok) return json({ error: r.error }, 400);
     return json({ ok: true });
